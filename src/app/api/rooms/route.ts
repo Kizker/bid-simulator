@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { auctionRooms, simulationConfigs, bids } from "@/db/schema";
+import { auctionRooms, simulationConfigs } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { simulationEngine } from "@/server/engine";
 
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const now = Date.now();
-    const roomId = `room-${now}-${Math.random().toString(36).substring(2, 6)}`;
+    const roomId = `lot-${now}-${Math.random().toString(36).substring(2, 6)}`;
 
     const newRoom = {
       id: roomId,
@@ -52,12 +52,11 @@ export async function POST(req: Request) {
       botEnabled: body.botEnabled ? 1 : 0,
       botCount: Number(body.botCount) || 4,
       botAggressiveness: body.botAggressiveness || "MEDIUM",
-      botMinDelayMs: Number(body.botMinDelayMs) || 1500,
-      botMaxDelayMs: Number(body.botMaxDelayMs) || 4500,
+      botMinDelayMs: Number(body.botMinDelayMs) || 2000,
+      botMaxDelayMs: Number(body.botMaxDelayMs) || 5000,
       antiSnipingEnabled: body.antiSnipingEnabled ? 1 : 0,
     });
 
-    // Also register in memory engine if running
     if (simulationEngine) {
       await simulationEngine.init();
     }
