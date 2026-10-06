@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef, Suspense } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MobileFrame } from "@/components/simulator/MobileFrame";
 import { LoginScreen } from "@/components/bidding-plus/LoginScreen";
@@ -34,12 +34,16 @@ function SimulatorContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWinningModal, setShowWinningModal] = useState(false);
 
-  // Fetch all rooms from API
+  // Safe fetch all rooms from API
   const fetchAllRooms = async () => {
     try {
       const res = await fetch("/api/rooms");
+      if (!res.ok) {
+        console.warn("API /api/rooms returned non-200 status:", res.status);
+        return;
+      }
       const data = await res.json();
-      if (data.success && data.rooms) {
+      if (data?.success && Array.isArray(data?.rooms) && data.rooms.length > 0) {
         setRooms(data.rooms);
         const current = data.rooms.find((r: AuctionRoom) => r.id === initialLotParam) || data.rooms[0];
         if (current) {
@@ -48,7 +52,7 @@ function SimulatorContent() {
         }
       }
     } catch (e) {
-      console.error(e);
+      console.error("Gagal mengambil data rooms:", e);
     }
   };
 
@@ -82,7 +86,6 @@ function SimulatorContent() {
     });
 
     socket.on("bid_placed", (data: { bid: Bid; room: AuctionRoom; antiSnipingTriggered: boolean }) => {
-      // Update selected room if active
       if (data.room.id === selectedLot?.id) {
         setSelectedLot(data.room);
         setTimeRemaining(data.room.timeRemaining);
@@ -158,12 +161,11 @@ function SimulatorContent() {
   const handleBack = () => {
     if (historyStack.length > 1) {
       const newStack = [...historyStack];
-      newStack.pop(); // remove current
+      newStack.pop();
       const prev = newStack[newStack.length - 1];
       setHistoryStack(newStack);
       setCurrentScreen(prev);
     } else {
-      // Default fallback
       if (currentScreen === "detail") setCurrentScreen("catalog");
       else if (currentScreen === "catalog") setCurrentScreen("sessions");
       else if (currentScreen === "sessions") setCurrentScreen("home");

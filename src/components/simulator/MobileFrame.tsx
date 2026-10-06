@@ -2,11 +2,12 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Smartphone, Monitor, Volume2, VolumeX, Sliders, ExternalLink } from "lucide-react";
+import { Smartphone, Monitor, Volume2, VolumeX, Sliders } from "lucide-react";
 import { soundFX } from "@/lib/audio";
 
 interface MobileFrameProps {
   children: React.ReactNode;
+  roomTitle?: string;
   activeScreen?: string;
   onNavigateScreen?: (screen: any) => void;
   onAndroidBack?: () => void;
@@ -15,6 +16,7 @@ interface MobileFrameProps {
 
 export function MobileFrame({
   children,
+  roomTitle,
   activeScreen,
   onNavigateScreen,
   onAndroidBack,
@@ -127,7 +129,7 @@ export function MobileFrame({
             : "max-w-[390px] md:h-[820px] md:rounded-[44px] md:border-[10px] md:border-[#1E293B] md:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] md:ring-1 md:ring-slate-700/60"
         } h-screen bg-white flex flex-col overflow-hidden text-slate-800`}
       >
-        {/* Android Status Bar (Exact matching Screenshots: 11:20, VoLTE, Wifi, Battery) */}
+        {/* Android Status Bar (Matching Screenshots: 11:20, VoLTE, Wifi, Battery) */}
         <div className="flex items-center justify-between px-5 pt-2 pb-1 text-[11px] font-semibold select-none z-40 bg-[#0066D6] text-white">
           <span>11:20</span>
           <div className="flex items-center gap-1 text-[10px] font-sans">

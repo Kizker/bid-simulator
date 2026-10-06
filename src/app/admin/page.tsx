@@ -45,8 +45,9 @@ export default function AdminPage() {
   const fetchRooms = async () => {
     try {
       const res = await fetch("/api/rooms");
+      if (!res.ok) return;
       const data = await res.json();
-      if (data.success && data.rooms.length > 0) {
+      if (data?.success && Array.isArray(data?.rooms) && data.rooms.length > 0) {
         setRooms(data.rooms);
         if (!selectedRoomId) {
           setSelectedRoomId(data.rooms[0].id);
@@ -69,9 +70,12 @@ export default function AdminPage() {
     socket.emit("join_room", selectedRoomId);
 
     fetch(`/api/rooms/${selectedRoomId}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
       .then((data) => {
-        if (data.success) {
+        if (data?.success) {
           setSelectedRoom(data.room);
           setConfig(data.config);
           setRecentBids(data.bids || []);
