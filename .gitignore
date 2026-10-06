@@ -20,9 +20,25 @@
 # production
 /build
 
-# misc
+# misc & macOS hygiene
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+AppleDouble
+Network Trash Folder
+*.swp
+*.swo
 *.pem
+
+# sqlite local database
+*.db
+*.db-journal
+*.db-wal
+/data/*.db
+/data/*.db-wal
+/data/*.db-journal
 
 # debug
 npm-debug.log*
