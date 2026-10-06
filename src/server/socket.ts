@@ -64,7 +64,7 @@ export function initSocketServer(io: SocketIOServer, engine: SimulationEngine) {
     socket.on("place_bid", async (data: { roomId: string; bidderName: string; amount: number }) => {
       const result = await engine.placeBid({
         roomId: data.roomId,
-        bidderName: data.bidderName || "Peserta Mobile",
+        bidderName: data.bidderName || "Kamu",
         bidderType: "USER",
         amount: data.amount,
       });

@@ -12,16 +12,15 @@ export interface RoomRuntimeState {
 
 export type EventListener = (event: string, payload: any) => void;
 
-// List of realistic bot names for the auction simulation
+// List of realistic bot phone numbers matching Bidding Plus
 const BOT_NAMES = [
-  "Budi_Collector",
-  "Sultan_PIK",
-  "Rian_WatchHunter",
-  "VintageGuy99",
-  "Hendra_Invest",
-  "Denny_SneakerHead",
-  "Maya_Luxury",
-  "Agus_Antik",
+  "+62896...",
+  "+62812...",
+  "+62857...",
+  "+62878...",
+  "+62813...",
+  "+62821...",
+  "+62852...",
 ];
 
 export class SimulationEngine {

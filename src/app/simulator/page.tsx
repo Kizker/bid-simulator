@@ -3,65 +3,77 @@
 import React, { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MobileFrame } from "@/components/simulator/MobileFrame";
-import { AuctionHeader } from "@/components/simulator/AuctionHeader";
-import { ItemShowcase } from "@/components/simulator/ItemShowcase";
-import { LiveBidTicker } from "@/components/simulator/LiveBidTicker";
-import { StickyBidControls } from "@/components/simulator/StickyBidControls";
+import { LoginScreen } from "@/components/bidding-plus/LoginScreen";
+import { OtpScreen } from "@/components/bidding-plus/OtpScreen";
+import { HomeScreen } from "@/components/bidding-plus/HomeScreen";
+import { SessionsScreen } from "@/components/bidding-plus/SessionsScreen";
+import { CatalogScreen } from "@/components/bidding-plus/CatalogScreen";
+import { LiveDetailScreen } from "@/components/bidding-plus/LiveDetailScreen";
 import { WinningModal } from "@/components/simulator/WinningModal";
 import { getSocketClient } from "@/lib/socket-client";
 import { soundFX } from "@/lib/audio";
 import type { AuctionRoom, Bid, SimulationConfig } from "@/db/schema";
-import { Layers, AlertCircle, Sparkles } from "lucide-react";
+
+type ScreenType = "login" | "otp" | "home" | "sessions" | "catalog" | "detail";
 
 function SimulatorContent() {
   const searchParams = useSearchParams();
-  const requestedRoomId = searchParams?.get("room") || "room-1";
+  const initialScreenParam = (searchParams?.get("screen") as ScreenType) || "login";
+  const initialLotParam = searchParams?.get("lot") || "lot-1";
 
-  const [currentRoomId, setCurrentRoomId] = useState<string>(requestedRoomId);
-  const [room, setRoom] = useState<AuctionRoom | null>(null);
-  const [config, setConfig] = useState<SimulationConfig | null>(null);
+  // App navigation state
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>(initialScreenParam);
+  const [historyStack, setHistoryStack] = useState<ScreenType[]>(["login"]);
+  const [phoneNumber, setPhoneNumber] = useState<string>("81373827173");
+
+  // Auction data state
+  const [rooms, setRooms] = useState<AuctionRoom[]>([]);
+  const [selectedLot, setSelectedLot] = useState<AuctionRoom | null>(null);
   const [bids, setBids] = useState<Bid[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState<number>(120);
-  const [userName, setUserName] = useState<string>("Sultan_Muda");
+  const [timeRemaining, setTimeRemaining] = useState<number>(45240); // 12h 34m
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWinningModal, setShowWinningModal] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [availableRooms, setAvailableRooms] = useState<AuctionRoom[]>([]);
-  const [isRoomPickerOpen, setIsRoomPickerOpen] = useState(false);
 
-  const prevHighestBidderRef = useRef<string | null>(null);
-
-  // Fetch all rooms for quick lot switching
-  useEffect(() => {
-    fetch("/api/rooms")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.rooms) {
-          setAvailableRooms(data.rooms);
+  // Fetch all rooms from API
+  const fetchAllRooms = async () => {
+    try {
+      const res = await fetch("/api/rooms");
+      const data = await res.json();
+      if (data.success && data.rooms) {
+        setRooms(data.rooms);
+        const current = data.rooms.find((r: AuctionRoom) => r.id === initialLotParam) || data.rooms[0];
+        if (current) {
+          setSelectedLot(current);
+          setTimeRemaining(current.timeRemaining);
         }
-      })
-      .catch(console.error);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllRooms();
   }, []);
 
-  // Connect to Socket.io and Room Channel
+  // Connect to Socket.io for live updates
   useEffect(() => {
+    if (!selectedLot) return;
     const socket = getSocketClient();
 
-    socket.emit("join_room", currentRoomId);
+    socket.emit("join_room", selectedLot.id);
 
     socket.on("initial_state", (data: { room: AuctionRoom; config: SimulationConfig; recentBids: Bid[] }) => {
-      setRoom(data.room);
-      setConfig(data.config);
+      setSelectedLot(data.room);
       setBids(data.recentBids);
       setTimeRemaining(data.room.timeRemaining);
-      prevHighestBidderRef.current = data.room.highestBidderName;
       if (data.room.status === "ENDED") {
         setShowWinningModal(true);
       }
     });
 
     socket.on("timer_tick", (data: { roomId: string; timeRemaining: number }) => {
-      if (data.roomId === currentRoomId) {
+      if (data.roomId === selectedLot?.id) {
         setTimeRemaining(data.timeRemaining);
         if (data.timeRemaining <= 5 && data.timeRemaining > 0) {
           soundFX.playTick();
@@ -69,233 +81,204 @@ function SimulatorContent() {
       }
     });
 
-    socket.on("bid_placed", (data: { bid: Bid; room: AuctionRoom; antiSnipingTriggered: boolean; extendedSeconds: number }) => {
-      if (data.room.id === currentRoomId) {
-        setRoom(data.room);
-        setBids((prev) => [data.bid, ...prev.filter((b) => b.id !== data.bid.id)]);
+    socket.on("bid_placed", (data: { bid: Bid; room: AuctionRoom; antiSnipingTriggered: boolean }) => {
+      // Update selected room if active
+      if (data.room.id === selectedLot?.id) {
+        setSelectedLot(data.room);
         setTimeRemaining(data.room.timeRemaining);
+        setBids((prev) => [data.bid, ...prev.filter((b) => b.id !== data.bid.id)]);
 
-        // Check if user was just outbid
-        if (
-          prevHighestBidderRef.current === userName &&
-          data.bid.bidderName !== userName
-        ) {
+        if (data.bid.bidderName !== "Kamu") {
           soundFX.playOutbidWarning();
-          showToast(`⚠️ Kamu terlewati oleh ${data.bid.bidderName}!`);
-        }
-
-        prevHighestBidderRef.current = data.room.highestBidderName;
-
-        if (data.antiSnipingTriggered) {
-          soundFX.playAntiSnipingAlert();
-          showToast(`⏱️ Anti-Sniping Aktif! Durasi lelang bertambah +${data.extendedSeconds} detik!`);
         }
       }
+
+      // Update room in catalog list as well!
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.id === data.room.id
+            ? { ...r, currentPrice: data.room.currentPrice, totalBids: data.room.totalBids }
+            : r
+        )
+      );
     });
 
-    socket.on("room_updated", (updatedRoom: AuctionRoom) => {
-      if (updatedRoom.id === currentRoomId) {
-        setRoom(updatedRoom);
-        setTimeRemaining(updatedRoom.timeRemaining);
-        prevHighestBidderRef.current = updatedRoom.highestBidderName;
-        if (updatedRoom.status === "ENDED") {
+    socket.on("room_updated", (updated: AuctionRoom) => {
+      if (updated.id === selectedLot?.id) {
+        setSelectedLot(updated);
+        setTimeRemaining(updated.timeRemaining);
+        if (updated.status === "ENDED") {
           setShowWinningModal(true);
         }
       }
-    });
-
-    socket.on("time_extended", (data: { roomId: string; timeRemaining: number; added: number }) => {
-      if (data.roomId === currentRoomId) {
-        setTimeRemaining(data.timeRemaining);
-        soundFX.playAntiSnipingAlert();
-        showToast(`⏱️ Waktu ditambah +${data.added} detik oleh Admin!`);
-      }
+      setRooms((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
     });
 
     socket.on("bids_cleared", (data: { roomId: string }) => {
-      if (data.roomId === currentRoomId) {
+      if (data.roomId === selectedLot?.id) {
         setBids([]);
         setShowWinningModal(false);
-        showToast("🔄 Simulasi telah di-reset.");
       }
     });
 
     socket.on("auction_ended", (data: { roomId: string }) => {
-      if (data.roomId === currentRoomId) {
+      if (data.roomId === selectedLot?.id) {
         setShowWinningModal(true);
       }
-    });
-
-    socket.on("bid_error", (err: { message: string }) => {
-      setIsSubmitting(false);
-      showToast(err.message || "Tawaran gagal.");
     });
 
     socket.on("bid_success", () => {
       setIsSubmitting(false);
     });
 
+    socket.on("bid_error", (err: { message: string }) => {
+      setIsSubmitting(false);
+      alert(err.message || "Tawaran gagal.");
+    });
+
     return () => {
-      socket.emit("leave_room", currentRoomId);
+      socket.emit("leave_room", selectedLot.id);
       socket.off("initial_state");
       socket.off("timer_tick");
       socket.off("bid_placed");
       socket.off("room_updated");
-      socket.off("time_extended");
       socket.off("bids_cleared");
       socket.off("auction_ended");
-      socket.off("bid_error");
       socket.off("bid_success");
+      socket.off("bid_error");
     };
-  }, [currentRoomId, userName]);
+  }, [selectedLot?.id]);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((current) => (current === msg ? null : current));
-    }, 4000);
+  // Navigation handlers
+  const navigateTo = (next: ScreenType) => {
+    setHistoryStack((prev) => [...prev, next]);
+    setCurrentScreen(next);
+  };
+
+  const handleBack = () => {
+    if (historyStack.length > 1) {
+      const newStack = [...historyStack];
+      newStack.pop(); // remove current
+      const prev = newStack[newStack.length - 1];
+      setHistoryStack(newStack);
+      setCurrentScreen(prev);
+    } else {
+      // Default fallback
+      if (currentScreen === "detail") setCurrentScreen("catalog");
+      else if (currentScreen === "catalog") setCurrentScreen("sessions");
+      else if (currentScreen === "sessions") setCurrentScreen("home");
+      else if (currentScreen === "home") setCurrentScreen("login");
+      else if (currentScreen === "otp") setCurrentScreen("login");
+    }
   };
 
   const handlePlaceBid = (amount: number) => {
+    if (!selectedLot) return;
     setIsSubmitting(true);
     const socket = getSocketClient();
     socket.emit("place_bid", {
-      roomId: currentRoomId,
-      bidderName: userName,
+      roomId: selectedLot.id,
+      bidderName: "Kamu",
       amount,
     });
   };
 
-  const handleResetSimulation = () => {
-    const socket = getSocketClient();
-    socket.emit("admin_command", {
-      action: "RESET",
-      roomId: currentRoomId,
-    });
-    setShowWinningModal(false);
+  const handleSelectLot = (lot: AuctionRoom) => {
+    setSelectedLot(lot);
+    navigateTo("detail");
   };
-
-  const handleSelectRoom = (roomId: string) => {
-    setCurrentRoomId(roomId);
-    setIsRoomPickerOpen(false);
-    setShowWinningModal(false);
-  };
-
-  if (!room) {
-    return (
-      <MobileFrame>
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4 animate-spin">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <h3 className="font-bold text-white text-sm">Menghubungkan ke Ruang Lelang...</h3>
-          <p className="text-xs text-slate-400 mt-1">Menginisialisasi channel Socket.io</p>
-        </div>
-      </MobileFrame>
-    );
-  }
 
   return (
-    <MobileFrame roomTitle={room.title}>
-      {/* Toast Notification Banner */}
-      {toastMessage && (
-        <div className="absolute top-14 inset-x-4 z-50 animate-in slide-in-from-top duration-300">
-          <div className="bg-slate-900/95 border border-amber-500/60 text-amber-300 text-xs font-semibold px-3 py-2 rounded-xl shadow-xl backdrop-blur-md flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>{toastMessage}</span>
-            </div>
-            <button
-              onClick={() => setToastMessage(null)}
-              className="text-slate-400 hover:text-white text-xs ml-2"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
+    <MobileFrame
+      activeScreen={currentScreen}
+      onNavigateScreen={(screen: ScreenType) => {
+        setHistoryStack((prev) => [...prev, screen]);
+        setCurrentScreen(screen);
+      }}
+      onAndroidBack={handleBack}
+      onAndroidHome={() => {
+        setHistoryStack(["home"]);
+        setCurrentScreen("home");
+      }}
+    >
+      {/* 1. Layar Masuk */}
+      {currentScreen === "login" && (
+        <LoginScreen
+          onSuccess={(phone) => {
+            setPhoneNumber(phone);
+            navigateTo("otp");
+          }}
+        />
       )}
 
-      {/* Lot / Room Switcher Floating Trigger */}
-      <button
-        onClick={() => setIsRoomPickerOpen(!isRoomPickerOpen)}
-        className="absolute top-3 right-4 z-40 p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/80 flex items-center gap-1 text-[10px] font-semibold transition"
-        title="Ganti Lot Lelang"
-      >
-        <Layers className="w-3.5 h-3.5 text-amber-400" />
-        <span>Pilih Lot</span>
-      </button>
-
-      {/* Lot Switcher Drawer */}
-      {isRoomPickerOpen && (
-        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm p-4 flex flex-col justify-end animate-in fade-in duration-200">
-          <div className="bg-[#111827] rounded-3xl p-4 border border-slate-700 max-h-[75vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                Pilih Skenario Lelang
-              </h3>
-              <button
-                onClick={() => setIsRoomPickerOpen(false)}
-                className="text-slate-400 hover:text-white text-xs"
-              >
-                Tutup ✕
-              </button>
-            </div>
-            <div className="py-2 space-y-2 overflow-y-auto flex-1">
-              {availableRooms.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => handleSelectRoom(r.id)}
-                  className={`w-full p-2.5 rounded-xl border flex items-center gap-3 text-left transition ${
-                    r.id === currentRoomId
-                      ? "bg-amber-500/15 border-amber-500/60 text-white"
-                      : "bg-slate-900/60 border-slate-800 hover:bg-slate-800 text-slate-300"
-                  }`}
-                >
-                  <img
-                    src={r.imageUrl}
-                    alt={r.title}
-                    className="w-12 h-12 rounded-lg object-cover border border-slate-700 shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs font-bold truncate">{r.title}</h4>
-                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                      Open: Rp {r.startingPrice.toLocaleString("id-ID")}
-                    </p>
-                  </div>
-                  <span
-                    className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${
-                      r.status === "ACTIVE"
-                        ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
-                        : "bg-slate-800 text-slate-400"
-                    }`}
-                  >
-                    {r.status}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* 2. Layar OTP */}
+      {currentScreen === "otp" && (
+        <OtpScreen
+          phoneNumber={phoneNumber}
+          onBack={handleBack}
+          onSuccess={() => navigateTo("home")}
+        />
       )}
 
-      {/* Main Mobile Screen Flow */}
-      <AuctionHeader room={room} timeRemaining={timeRemaining} />
-      <ItemShowcase room={room} userName={userName} />
-      <LiveBidTicker bids={bids} currentUserName={userName} />
-      <StickyBidControls
-        room={room}
-        userName={userName}
-        onUpdateUserName={setUserName}
-        onPlaceBid={handlePlaceBid}
-        isSubmitting={isSubmitting}
-      />
+      {/* 3. Layar Beranda */}
+      {currentScreen === "home" && (
+        <HomeScreen
+          onSelectCategory={(category) => {
+            if (category === "Handphone") {
+              navigateTo("sessions");
+            } else {
+              alert(`Kategori ${category} akan segera hadir.`);
+            }
+          }}
+        />
+      )}
 
-      {/* Winning / Finished Overlay Modal */}
-      {showWinningModal && (
+      {/* 4. Layar Pilihan Sesi Handphone */}
+      {currentScreen === "sessions" && (
+        <SessionsScreen
+          categoryTitle="Handphone"
+          onBack={handleBack}
+          onSelectSession={(sessionType) => {
+            if (sessionType === "reguler") {
+              navigateTo("catalog");
+            } else {
+              alert(`Sesi ${sessionType} dibuka pukul 17:00.`);
+            }
+          }}
+        />
+      )}
+
+      {/* 5. Layar Katalog Bidding Reguler */}
+      {currentScreen === "catalog" && (
+        <CatalogScreen
+          rooms={rooms}
+          onBack={handleBack}
+          onSelectLot={handleSelectLot}
+        />
+      )}
+
+      {/* 6. Layar Live Bidding Room & Detail Lot */}
+      {currentScreen === "detail" && selectedLot && (
+        <LiveDetailScreen
+          room={selectedLot}
+          bids={bids}
+          timeRemaining={timeRemaining}
+          onBack={handleBack}
+          onPlaceBid={handlePlaceBid}
+          isSubmitting={isSubmitting}
+        />
+      )}
+
+      {/* Winning Celebration Modal */}
+      {showWinningModal && selectedLot && (
         <WinningModal
-          room={room}
-          userName={userName}
-          onReset={handleResetSimulation}
+          room={selectedLot}
+          userName="Kamu"
+          onReset={() => {
+            const socket = getSocketClient();
+            socket.emit("admin_command", { action: "RESET", roomId: selectedLot.id });
+            setShowWinningModal(false);
+          }}
           onClose={() => setShowWinningModal(false)}
         />
       )}
@@ -307,8 +290,8 @@ export default function SimulatorPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0A0D15] flex items-center justify-center text-slate-400 text-xs font-mono">
-          Memuat Simulator Bid...
+        <div className="min-h-screen bg-white flex items-center justify-center text-slate-500 text-xs font-mono">
+          Memuat Bidding Plus Mobile...
         </div>
       }
     >
