@@ -22,8 +22,14 @@ client.execute("SELECT 1;").then((res) => {
   const next = require("next");
   console.log("✅ STEP 6: OK");
 
-  console.log("🔍 STEP 7: calling next({ dev: false })...");
-  const app = next({ dev: false, hostname: "0.0.0.0", port: 3000 });
+  console.log("🔍 STEP 7: calling next({ dev: false, dir: __dirname })...");
+  const app = next({
+    dev: false,
+    hostname: "0.0.0.0",
+    port: 3000,
+    dir: __dirname,
+    conf: { experimental: { cpus: 1 } },
+  });
   console.log("✅ STEP 7: OK");
 
   console.log("🔍 STEP 8: app.prepare()...");

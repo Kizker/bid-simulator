@@ -1124,7 +1124,15 @@ function initSocketServer(io, engine) {
 var dev = process.env.NODE_ENV !== "production";
 var hostname = "0.0.0.0";
 var port = parseInt(process.env.PORT || "3000", 10);
-var app = (0, import_next.default)({ dev, hostname, port });
+var app = (0, import_next.default)({
+  dev,
+  hostname,
+  port,
+  dir: __dirname,
+  conf: {
+    experimental: { cpus: 1 }
+  }
+});
 var handle = app.getRequestHandler();
 app.prepare().then(async () => {
   await simulationEngine.init();
