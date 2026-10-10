@@ -22,22 +22,37 @@ client.execute("SELECT 1;").then((res) => {
   const next = require("next");
   console.log("✅ STEP 6: OK");
 
-  console.log("🔍 STEP 7: calling next({ dev: false, dir: __dirname })...");
-  const app = next({
-    dev: false,
-    hostname: "0.0.0.0",
-    port: 3000,
-    dir: __dirname,
-    conf: { experimental: { cpus: 1 } },
-  });
-  console.log("✅ STEP 7: OK");
+  console.log("🔍 STEP 7: loading NextNodeServer & config...");
+  const NextNodeServer = require("next/dist/server/next-server").default;
+  const loadConfig = require("next/dist/server/config").default;
+  const { PHASE_PRODUCTION_SERVER } = require("next/dist/shared/lib/constants");
 
-  console.log("🔍 STEP 8: app.prepare()...");
-  app.prepare().then(() => {
-    console.log("🎉 ALL STEPS PASSED! Next.js and SQLite are 100% operational!");
+  loadConfig(PHASE_PRODUCTION_SERVER, process.cwd(), { silent: true }).then(async (conf) => {
+    console.log("✅ STEP 7: Config loaded OK");
+
+    console.log("🔍 STEP 8: instantiating NextNodeServer...");
+    const nextServer = new NextNodeServer({
+      dir: process.cwd(),
+      conf,
+      dev: false,
+      minimalMode: false,
+      hostname: "0.0.0.0",
+      port: 3000,
+    });
+    console.log("✅ STEP 8: NextNodeServer instantiated OK");
+
+    console.log("🔍 STEP 9: nextServer.prepare()...");
+    await nextServer.prepare();
+    console.log("✅ STEP 9: nextServer.prepare() OK");
+
+    console.log("🔍 STEP 10: getting request handler...");
+    const handle = nextServer.getRequestHandler();
+    console.log("✅ STEP 10: getRequestHandler OK -> handler type:", typeof handle);
+
+    console.log("\n🎉 ALL 10 STEPS PASSED 100%! Ready to run in production!");
     process.exit(0);
   }).catch((err) => {
-    console.error("❌ STEP 8 ERROR in app.prepare():", err);
+    console.error("❌ ERROR in Next.js initialization:", err);
     process.exit(1);
   });
 }).catch((err) => {

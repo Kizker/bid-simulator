@@ -8,19 +8,40 @@ const dev = process.env.NODE_ENV !== "production";
 const hostname = "0.0.0.0";
 const port = parseInt(process.env.PORT || "3000", 10);
 
-const app = next({
-  dev,
-  hostname,
-  port,
-  dir: __dirname,
-  conf: {
-    experimental: { cpus: 1 },
-  },
-});
-const handle = app.getRequestHandler();
-
-app.prepare().then(async () => {
+async function main() {
   await simulationEngine.init();
+
+  let handle: (req: any, res: any) => Promise<void>;
+
+  if (dev) {
+    const app = next({
+      dev: true,
+      hostname,
+      port,
+      dir: process.cwd(),
+    });
+    await app.prepare();
+    handle = app.getRequestHandler();
+  } else {
+    // Production: Direct NextNodeServer instantiation to run single-threaded
+    // Eliminates worker threads & child_process fork that trigger SIGABRT on CloudLinux/cPanel shared hosting
+    const NextNodeServer = require("next/dist/server/next-server").default;
+    const loadConfig = require("next/dist/server/config").default;
+    const { PHASE_PRODUCTION_SERVER } = require("next/dist/shared/lib/constants");
+
+    const projectDir = process.cwd();
+    const conf = await loadConfig(PHASE_PRODUCTION_SERVER, projectDir, { silent: true });
+    const nextServer = new NextNodeServer({
+      dir: projectDir,
+      conf,
+      dev: false,
+      minimalMode: false,
+      hostname,
+      port,
+    });
+    await nextServer.prepare();
+    handle = nextServer.getRequestHandler();
+  }
 
   const httpServer = createServer((req, res) => {
     // Anti-SEO: Blokir mutlak pengindeksan oleh search engine (Google, Bing, dll.)
@@ -45,4 +66,9 @@ app.prepare().then(async () => {
     console.log(`🖥️ CMS Controller   : http://localhost:${port}/admin`);
     console.log(`======================================================\n`);
   });
+}
+
+main().catch((err) => {
+  console.error("❌ Fatal error starting server:", err);
+  process.exit(1);
 });
