@@ -27,8 +27,12 @@ else
     echo "📦 [Deploy] Menginstal dependencies dengan npm..."
     npm install
 
-    echo "🔨 [Deploy] Melakukan build production..."
-    npm run build
+    if [ ! -d ".next" ]; then
+        echo "🔨 [Deploy] Melakukan build production..."
+        npm run build
+    else
+        echo "⚡ [Deploy] Folder .next terkompilasi sudah tersedia. Melewati build lokal..."
+    fi
 
     # Restart via PM2 jika ada, atau fallback
     if command -v pm2 &> /dev/null; then
