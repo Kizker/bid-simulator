@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 set -e
 
+# Proteksi agar tidak sengaja dijalankan di Mac lokal
+if [ "$(uname)" = "Darwin" ]; then
+    echo "⚠️ PERHATIAN: Script ini harus dijalankan di terminal SSH VPS Linux (root@72.62.127.119), bukan di komputer Mac lokal Anda."
+    echo "👉 Masuk ke VPS terlebih dahulu dengan: ssh root@72.62.127.119"
+    exit 1
+fi
+
 echo "============================================================"
 echo "🚀 KONFIGURASI OTOMATIS NGINX & SSL (BID-SIMULATOR)"
 echo "============================================================"
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$DIR"
 
 # 1. Deteksi IP Publik Server yang digunakan oleh FASTPANEL
 DETECTED_IP=$(grep -hoE "listen\s+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+):(80|443)" /etc/nginx/ 2>/dev/null | head -n 1 | cut -d: -f1 | awk '{print $2}' || true)
@@ -72,6 +82,13 @@ server {
     # Anti-indexing headers
     add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet" always;
 
+    # Static assets Next.js (CSS, JS, Fonts)
+    location /_next/static/ {
+        alias /var/www/fastuser/data/www/bidsim.labtry.my.id/.next/static/;
+        expires 365d;
+        access_log off;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:3030;
         proxy_http_version 1.1;
@@ -101,17 +118,27 @@ nginx -t
 echo "🚀 Mereload Nginx..."
 nginx -s reload
 
-# 7. Verifikasi
+# 7. Restart service backend simulator agar melayani static files terbaru
+if [ -f "./start.sh" ]; then
+    echo "🔄 Merestart backend Bid Simulator..."
+    ./start.sh
+fi
+
+# 8. Verifikasi
 echo "============================================================"
 echo "📊 HASIL VERIFIKASI AKHIR:"
 echo "------------------------------------------------------------"
 echo "1. Port 3030 (Aplikasi Lokal):"
 curl -s -I http://127.0.0.1:3030/admin | head -n 4 || true
 echo "------------------------------------------------------------"
-echo "2. HTTPS Publik (bidsim.labtry.my.id):"
+echo "2. CSS Static Asset Check:"
+curl -s -I http://127.0.0.1:3030/_next/static/css/55236833e0268034.css | head -n 4 || true
+echo "------------------------------------------------------------"
+echo "3. HTTPS Publik (bidsim.labtry.my.id):"
 curl -s -Iv https://bidsim.labtry.my.id/admin 2>&1 | grep -E "(CN=|HTTP\/|< HTTP|SSL certificate)" | head -n 10 || true
 echo "============================================================"
 echo "🎉 SELESAI! Silakan buka di browser Anda:"
 echo "👉 https://bidsim.labtry.my.id/admin"
 echo "👉 https://bidsim.labtry.my.id/simulator"
+
 

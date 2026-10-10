@@ -1181,24 +1181,24 @@ var hostname = "0.0.0.0";
 var port = parseInt(process.env.PORT || "3030", 10);
 async function main() {
   await simulationEngine.init();
+  const path2 = require("node:path");
+  const fs2 = require("node:fs");
+  let projectDir = process.cwd();
+  if (!fs2.existsSync(path2.join(projectDir, ".next/required-server-files.json"))) {
+    projectDir = path2.resolve(__dirname, "..");
+  }
   let handle;
   if (dev) {
     const app = (0, import_next.default)({
       dev: true,
       hostname,
       port,
-      dir: process.cwd()
+      dir: projectDir
     });
     await app.prepare();
     handle = app.getRequestHandler();
   } else {
-    const path2 = require("node:path");
-    const fs2 = require("node:fs");
     const NextNodeServer = require("next/dist/server/next-server").default;
-    let projectDir = process.cwd();
-    if (!fs2.existsSync(path2.join(projectDir, ".next/required-server-files.json"))) {
-      projectDir = path2.resolve(__dirname, "..");
-    }
     console.log(`\u{1F4C2} Using project directory: ${projectDir}`);
     const serverFiles = require(path2.join(projectDir, ".next/required-server-files.json"));
     const conf = serverFiles.config;
@@ -1213,8 +1213,54 @@ async function main() {
     await nextServer.prepare();
     handle = nextServer.getRequestHandler();
   }
+  const mimeTypes = {
+    ".js": "application/javascript",
+    ".css": "text/css",
+    ".woff2": "font/woff2",
+    ".woff": "font/woff",
+    ".ttf": "font/ttf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".svg": "image/svg+xml",
+    ".ico": "image/x-icon",
+    ".json": "application/json"
+  };
+  const fsStatic = require("node:fs");
+  const pathStatic = require("node:path");
+  const serveStaticFile = (res, filePath) => {
+    try {
+      const ext = pathStatic.extname(filePath);
+      const contentType = mimeTypes[ext] || "application/octet-stream";
+      const stat = fsStatic.statSync(filePath);
+      res.writeHead(200, {
+        "Content-Type": contentType,
+        "Content-Length": stat.size,
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet"
+      });
+      fsStatic.createReadStream(filePath).pipe(res);
+    } catch {
+      res.writeHead(404);
+      res.end();
+    }
+  };
   const httpServer = (0, import_node_http.createServer)((req, res) => {
     res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+    const rawUrl = req.url || "/";
+    const cleanUrl = rawUrl.split("?")[0];
+    if (cleanUrl.startsWith("/_next/static/")) {
+      const relPath = cleanUrl.replace(/^\/_next\/static\//, "");
+      const filePath = pathStatic.join(projectDir, ".next/static", relPath);
+      if (fsStatic.existsSync(filePath) && fsStatic.statSync(filePath).isFile()) {
+        return serveStaticFile(res, filePath);
+      }
+    }
+    const publicPath = pathStatic.join(projectDir, "public", cleanUrl.replace(/^\//, ""));
+    if (cleanUrl !== "/" && fsStatic.existsSync(publicPath) && fsStatic.statSync(publicPath).isFile()) {
+      return serveStaticFile(res, publicPath);
+    }
     handle(req, res);
   });
   const io = new import_socket.Server(httpServer, {
