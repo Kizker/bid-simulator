@@ -1,157 +1,165 @@
 # PANDUAN RESMI DEPLOYMENT SISTEM
 ## BidPulse — Real-Time Live Auction Simulator & CMS Controller
 
-Dokumen ini berisi panduan komprehensif untuk setup awal dan pembaruan (*deploy update*) aplikasi **BidPulse Auction Simulator** pada server hosting target:
+Dokumen ini berisi panduan lengkap untuk setup awal, konfigurasi reverse proxy, serta prosedur pembaruan (*deploy update*) aplikasi **BidPulse Auction Simulator** pada server VPS target:
 
-* **Domain**: `https://simbid.labtry.my.id`
-* **Koneksi SSH**: `ssh -p 65002 u141095167@46.202.138.88`
-* **Direktori Server**: `~/domains/simbid.labtry.my.id/public_html`
-* **Repository GitHub**: `https://github.com/Kizker/bid-simulator.git`
-* **Port Internal**: `3000`
-
----
-
-## 1. Arsitektur & Persiapan
-
-Aplikasi dibangun menggunakan **Next.js App Router** dengan custom server Node.js **Socket.io** (`server.ts`) dan database **SQLite** (`@libsql/client`).
-* Database tersimpan secara lokal dan persisten di `./data/simulator.db`.
-* Disediakan 2 metode eksekusi:
-  1. **Metode A: Docker & Docker Compose** (Rekomendasi jika VPS mendukung Docker).
-  2. **Metode B: Node.js v20 & PM2** (Rekomendasi untuk Hostinger Cloud/Web Hosting cPanel).
+* **Sistem Operasi**: Ubuntu 24.04 LTS (Hostinger VPS KVM 1)
+* **Koneksi SSH**: `ssh root@72.62.127.119`
+* **Domain Publik**: `https://bidsim.labtry.my.id`
+* **Direktori Server**: `/var/www/fastuser/data/www/bidsim.labtry.my.id`
+* **Control Panel**: FASTPANEL
+* **Port Internal**: `3030` *(Dipilih untuk menghindari bentrok dengan port 3000 yang sedang digunakan oleh container Docker `trading_app`)*
+* **Repository GitHub**: `https://github.com/Kizker/bid-simulator.git` (Branch: `main`)
 
 ---
 
-## 2. Panduan Setup Awal (First-Time Setup)
+## 1. Arsitektur & Spesifikasi Server
 
-### Langkah 1: Akses Server Hosting via SSH
-Buka terminal dan login ke server hosting:
+Aplikasi dibangun dengan arsitektur modern berkinerja tinggi:
+* **Frontend**: Next.js App Router (React 19) dengan desain mobile-first Bidding Plus.
+* **Backend Server**: Single-Process Node.js native (`dist/server.cjs`) dengan Socket.IO WebSocket server.
+* **Database**: SQLite lokal berkecepatan mikrodetik (`data/simulator.db`) dengan 336 ruangan lelang, 1.027 riwayat penawaran, 7 profil bot kustom, dan jadwal otomatis.
+* **Reverse Proxy**: Nginx (dikelola oleh FASTPANEL) dengan terminasi SSL HTTPS (Let's Encrypt) dan penerusan WebSocket (`Upgrade: websocket`).
+* **Proteksi Anti-SEO**: Header HTTP `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet` aktif di seluruh respons server.
+
+---
+
+## 2. Panduan Setup Awal (First-Time Deployment)
+
+### Langkah 1: Hubungkan ke Server VPS via SSH
+Buka terminal dan login menggunakan kredensial root:
 ```bash
-ssh -p 65002 u141095167@46.202.138.88
+ssh root@72.62.127.119
 ```
-*(Masukkan password SSH hosting saat diminta)*
 
-### Langkah 2: Masuk ke Folder Target Domain
+### Langkah 2: Masuk ke Direktori Situs FASTPANEL
 ```bash
-cd ~/domains/simbid.labtry.my.id/public_html
+cd /var/www/fastuser/data/www/bidsim.labtry.my.id
 
-# Hapus file default bawaan hosting jika ada (misal: default.php)
-rm -f default.php index.html
+# Hapus file placeholder bawaan FASTPANEL jika ada
+rm -f index.html
 ```
 
-### Langkah 3: Clone Source Code dari GitHub
+### Langkah 3: Clone Repository dari GitHub
 ```bash
 git clone https://github.com/Kizker/bid-simulator.git .
 ```
 
-### Langkah 4: Setup Environment & Folder Data
+### Langkah 4: Sesuaikan Kepemilikan Berkas (*Permissions*)
+FASTPANEL menggunakan user `fastuser` untuk pengelolaan file situs:
 ```bash
-cp .env.example .env
-mkdir -p data logs
+chown -R fastuser:fastuser /var/www/fastuser/data/www/bidsim.labtry.my.id
+chmod +x deploy.sh start.sh status.sh stop.sh
 ```
 
----
-
-## 3. Eksekusi Menjalankan Aplikasi
-
-Pilih salah satu metode berikut sesuai lingkungan server Anda:
-
-### PILIHAN A: Menggunakan Docker & Docker Compose
-Jika Docker terpasang di server:
+### Langkah 5: Instalasi Dependensi Node.js
+Server VPS sudah memiliki Node.js v24.16.0. Pasang dependensi aplikasi:
 ```bash
-# Build dan jalankan container di background
-docker compose up -d --build
-
-# Periksa status container
-docker compose ps
-
-# Cek log aplikasi
-docker compose logs -f
+npm install --omit=dev
 ```
 
-### PILIHAN B: Menggunakan Node.js & PM2
-Jika server tidak memiliki Docker (Hostinger Cloud/Web Hosting standar):
+### Langkah 6: Jalankan Server Aplikasi
+Jalankan aplikasi di background pada port `3030`:
 ```bash
-# 1. Pastikan pm2 terinstal (node & npm sudah ada secara default di server)
+# Opsi A: Menggunakan Runner Standalone Ringan (Rekomendasi)
+./start.sh
+
+# Opsi B: Menggunakan PM2 (Jika menyukai dashboard PM2)
 npm install -g pm2
-
-# 2. Instal dependensi dengan npm
-npm install
-
-# 3. Build Next.js
-npm run build
-
-# 4. Jalankan aplikasi via PM2
 pm2 start ecosystem.config.cjs
-
-# 5. Simpan service PM2
 pm2 save
 pm2 startup
 ```
 
+Setelah server menyala, uji respons port 3030:
+```bash
+curl -I http://127.0.0.1:3030/admin
+```
+*Respons wajib menampilkan: `HTTP/1.1 200 OK`.*
+
 ---
 
-## 4. Konfigurasi Reverse Proxy (.htaccess)
+## 3. Konfigurasi Reverse Proxy & WebSocket di FASTPANEL
 
-Agar domain `https://simbid.labtry.my.id` meneruskan traffic HTTP dan WebSocket ke port `3000`, pasang file `.htaccess`:
-```bash
-cp .htaccess.example .htaccess
+Agar domain `https://bidsim.labtry.my.id` meneruskan traffic HTTP dan WebSocket ke port `3030`:
+
+### A. Pengaturan Backend FASTPANEL
+1. Buka dashboard FASTPANEL di browser: `https://72.62.127.119:8888`
+2. Pilih kartu situs **`bidsim.labtry.my.id`**.
+3. Masuk ke menu **Pengaturan / Settings** ➔ **Backend**.
+4. Pilih **Backend type**: **`Proxy terbalik`** (*Reverse Proxy*).
+5. Klik **`+ Add`** dan masukkan Address: **`http://127.0.0.1:3030`**.
+6. Klik **Simpan**.
+
+### B. Memastikan Dukungan WebSocket Nginx
+Buka konfigurasi Nginx situs di FASTPANEL (atau edit berkas `/etc/nginx/fastpanel2-sites/bidsim.labtry.my.id.conf`), pastikan blok `location /` atau `location /api/socketio` memiliki konfigurasi WebSocket:
+```nginx
+proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection "upgrade";
+proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
 ```
 
-Isi konfigurasi `.htaccess`:
-* Meneruskan seluruh request web ke `http://127.0.0.1:3000`.
-* Meneruskan protokol WebSocket (`ws://` dan `wss://`) ke port 3000.
-* Memastikan header proteksi `X-Robots-Tag: noindex, nofollow` selalu aktif.
-
 ---
 
-## 5. Prosedur Deploy Lanjutan (Update / Perbaikan Kode)
+## 4. Prosedur Deploy Lanjutan (Update Kode dari GitHub)
 
-Setiap kali ada perbaikan kode yang sudah di-push ke GitHub, lakukan pembaruan di server:
+Setiap kali Anda melakukan perubahan kode di komputer lokal dan mengunggahnya ke GitHub (`git push origin main`), perbarui server VPS dengan cara:
 
-### Opsi 1: Otomatis 1-Klik menggunakan `deploy.sh` (Paling Cepat)
+### Cara Cepat (1 Perintah):
 ```bash
-ssh -p 65002 u141095167@46.202.138.88
-cd ~/domains/simbid.labtry.my.id/public_html
+ssh root@72.62.127.119 "cd /var/www/fastuser/data/www/bidsim.labtry.my.id && ./deploy.sh"
+```
+
+### Cara Manual:
+```bash
+ssh root@72.62.127.119
+cd /var/www/fastuser/data/www/bidsim.labtry.my.id
+git pull origin main
 ./deploy.sh
 ```
 
-### Opsi 2: Update Manual
-* **Untuk Pengguna Docker:**
-  ```bash
-  git pull origin main
-  docker compose build
-  docker compose up -d
-  ```
-* **Untuk Pengguna PM2:**
-  ```bash
-  git pull origin main
-  npm install
-  npm run build
-  pm2 reload bid-simulator
-  ```
+Script `deploy.sh` akan secara otomatis:
+1. Menarik commit terbaru dari `origin/main`.
+2. Memperbarui dependensi npm jika diperlukan.
+3. Merestart service server di port 3030 tanpa jeda.
+4. Memvalidasi respons server `HTTP 200 OK`.
 
 ---
 
-## 6. Manajemen Database SQLite & Backup
+## 5. Manajemen Database SQLite & Cadangan Data (*Backup*)
 
-* Database berada di `data/simulator.db`.
-* Database **TIDAK AKAN TERHAPUS** saat melakukan update kode.
-* Untuk melakukan backup berkala:
+Database SQLite tersimpan di:
+`/var/www/fastuser/data/www/bidsim.labtry.my.id/data/simulator.db`
+
+* Database **tidak akan hilang atau ter-reset** saat menjalankan `deploy.sh`.
+* Untuk membuat cadangan data lelang secara berkala:
   ```bash
+  cd /var/www/fastuser/data/www/bidsim.labtry.my.id
   cp data/simulator.db data/simulator_backup_$(date +%Y%m%d_%H%M%S).db
   ```
 
 ---
 
-## 7. Monitoring & Troubleshooting
+## 6. Tabel Perintah Cepat (*Cheat Sheet*)
 
-| Kebutuhan | Perintah Docker | Perintah PM2 |
-| :--- | :--- | :--- |
-| **Cek Status** | `docker compose ps` | `pm2 status` |
-| **Cek Log Real-Time** | `docker compose logs -f --tail=50` | `pm2 logs bid-simulator` |
-| **Restart Service** | `docker compose restart` | `pm2 restart bid-simulator` |
-| **Hentikan Service** | `docker compose down` | `pm2 stop bid-simulator` |
+| Kebutuhan | Perintah di Terminal VPS |
+| :--- | :--- |
+| **Cek Status Server** | `./status.sh` atau `curl -I http://127.0.0.1:3030/admin` |
+| **Lihat Log Server** | `cat logs/out.log \| tail -n 20` |
+| **Lihat Log Error** | `cat logs/err.log \| tail -n 20` |
+| **Restart Server** | `./start.sh` atau `pm2 restart bid-simulator` |
+| **Hentikan Server** | `./stop.sh` atau `pm2 stop bid-simulator` |
+| **Update Aplikasi** | `./deploy.sh` |
 
 ---
 
-*Panduan ini dibuat secara resmi untuk deployment `simbid.labtry.my.id`.*
+## 7. URL Akses Aplikasi
+
+* **Mobile Live Auction Simulator**: [https://bidsim.labtry.my.id/simulator](https://bidsim.labtry.my.id/simulator)
+* **CMS Master Controller (Admin)**: [https://bidsim.labtry.my.id/admin](https://bidsim.labtry.my.id/admin)
+
+*Dokumen panduan resmi diperbarui untuk lingkungan Hostinger VPS KVM 1.*
