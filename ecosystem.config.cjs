@@ -2,8 +2,7 @@ module.exports = {
   apps: [
     {
       name: "bid-simulator",
-      script: "./node_modules/tsx/dist/cli.mjs",
-      args: "server.ts",
+      script: "./dist/server.cjs",
       cwd: "./",
       exec_mode: "fork",
       instances: 1,
