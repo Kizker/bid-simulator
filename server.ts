@@ -6,7 +6,7 @@ import { initSocketServer } from "./src/server/socket";
 
 const dev = process.env.NODE_ENV === "development";
 const hostname = "0.0.0.0";
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = parseInt(process.env.PORT || "3030", 10);
 
 async function main() {
   await simulationEngine.init();

@@ -1178,7 +1178,7 @@ function initSocketServer(io, engine) {
 // server.ts
 var dev = process.env.NODE_ENV === "development";
 var hostname = "0.0.0.0";
-var port = parseInt(process.env.PORT || "3000", 10);
+var port = parseInt(process.env.PORT || "3030", 10);
 async function main() {
   await simulationEngine.init();
   let handle;

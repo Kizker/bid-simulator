@@ -7,8 +7,8 @@ PID=$(pgrep -f "dist/server.cjs" | head -n 1)
 
 if [ -n "$PID" ]; then
     echo "✅ Server AKTIF dengan PID: $PID"
-    echo "📊 Menguji respons HTTP port 3000..."
-    curl -I http://127.0.0.1:3000/admin || true
+    echo "📊 Menguji respons HTTP port 3030..."
+    curl -I http://127.0.0.1:3030/admin || true
 else
     echo "❌ Server TIDAK AKTIF (tidak ada proses dist/server.cjs)"
 fi

@@ -16,7 +16,7 @@ module.exports = {
       max_memory_restart: "500M",
       env: {
         NODE_ENV: "production",
-        PORT: 3000,
+        PORT: 3030,
         UV_THREADPOOL_SIZE: "1",
       },
       error_file: path.resolve(__dirname, "logs/err.log"),
