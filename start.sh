@@ -8,9 +8,9 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$DIR"
 
 echo "🛑 Menghentikan proses server lama & membersihkan PM2 jika ada..."
-pm2 kill 2>/dev/null || true
-pkill -f "dist/server.cjs" || true
-pkill -f "PM2" || true
+pkill -9 -f "dist/server.cjs" 2>/dev/null || true
+pkill -9 -f "pm2" 2>/dev/null || true
+pkill -9 -f "PM2" 2>/dev/null || true
 sleep 1
 
 mkdir -p "$DIR/logs"
