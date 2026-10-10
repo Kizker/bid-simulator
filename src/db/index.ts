@@ -19,11 +19,66 @@ export const db = drizzle(client, { schema });
 export { schema };
 
 // Self-healing: enable WAL mode, busy_timeout, and ensure users table exists
-(async () => {
+export const initDatabasePromise = (async () => {
   if (process.env.NEXT_PHASE === "phase-production-build") return;
   try {
     await client.execute("PRAGMA journal_mode = WAL;");
     await client.execute("PRAGMA busy_timeout = 5000;");
+
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS auction_rooms (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        subtitle TEXT NOT NULL DEFAULT '',
+        lot_badge TEXT NOT NULL DEFAULT '(AD) STANDART',
+        condition TEXT NOT NULL DEFAULT 'Fullset',
+        stock INTEGER NOT NULL DEFAULT 1,
+        specs TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'Handphone',
+        image_url TEXT NOT NULL,
+        starting_price INTEGER NOT NULL,
+        current_price INTEGER NOT NULL,
+        bid_increment INTEGER NOT NULL DEFAULT 50000,
+        reserve_price INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'ACTIVE',
+        total_duration_seconds INTEGER NOT NULL DEFAULT 45240,
+        time_remaining INTEGER NOT NULL DEFAULT 45240,
+        anti_sniping_seconds INTEGER NOT NULL DEFAULT 15,
+        highest_bidder_name TEXT,
+        highest_bidder_type TEXT,
+        total_bids INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `);
+
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS bids (
+        id TEXT PRIMARY KEY,
+        room_id TEXT NOT NULL,
+        bidder_name TEXT NOT NULL,
+        bidder_type TEXT NOT NULL DEFAULT 'USER',
+        amount INTEGER NOT NULL,
+        previous_amount INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'WINNING',
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (room_id) REFERENCES auction_rooms(id) ON DELETE CASCADE
+      );
+    `);
+
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS simulation_configs (
+        room_id TEXT PRIMARY KEY,
+        bot_enabled INTEGER NOT NULL DEFAULT 1,
+        bot_count INTEGER NOT NULL DEFAULT 4,
+        bot_aggressiveness TEXT NOT NULL DEFAULT 'MEDIUM',
+        bot_min_delay_ms INTEGER NOT NULL DEFAULT 2000,
+        bot_max_delay_ms INTEGER NOT NULL DEFAULT 5000,
+        anti_sniping_enabled INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY (room_id) REFERENCES auction_rooms(id) ON DELETE CASCADE
+      );
+    `);
 
     await client.execute(`
       CREATE TABLE IF NOT EXISTS users (

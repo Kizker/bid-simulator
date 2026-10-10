@@ -36,12 +36,12 @@ Network Trash Folder
 *.pem
 
 # sqlite local database
-*.db
 *.db-journal
 *.db-wal
-/data/*.db
+*.db-shm
 /data/*.db-wal
 /data/*.db-journal
+/data/*.db-shm
 
 # debug
 npm-debug.log*

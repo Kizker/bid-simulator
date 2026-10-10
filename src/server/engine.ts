@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { db, initDatabasePromise } from "../db";
 import {
   auctionRooms,
   bids,
@@ -94,6 +94,10 @@ export class SimulationEngine {
 
   public async init() {
     if (this.isInitialized) return;
+
+    if (initDatabasePromise) {
+      await initDatabasePromise;
+    }
 
     console.log("⚡ Initializing Simulation Engine...");
     const allRooms = await db.select().from(auctionRooms);
