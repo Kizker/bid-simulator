@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/rooms/[id]/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"/Users/andrichadeamitra/Documents/PROJECT/bid-simulator/src/app/api/rooms/[id]/route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

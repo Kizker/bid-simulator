@@ -1,0 +1,22 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/_global-error/page": "/_global-error",
+  "/api/admin/auth/route": "/api/admin/auth",
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/auth/register/route": "/api/auth/register",
+  "/api/auth/users/route": "/api/auth/users",
+  "/api/bids/route": "/api/bids",
+  "/api/bots/route": "/api/bots",
+  "/api/rooms/import-json/route": "/api/rooms/import-json",
+  "/api/rooms/reset/route": "/api/rooms/reset",
+  "/api/rooms/route": "/api/rooms",
+  "/api/schedule/route": "/api/schedule",
+  "/api/users/route": "/api/users",
+  "/favicon.ico/route": "/favicon.ico",
+  "/robots.txt/route": "/robots.txt",
+  "/api/rooms/[id]/route": "/api/rooms/[id]",
+  "/api/server-time/route": "/api/server-time",
+  "/page": "/",
+  "/simulator/page": "/simulator",
+  "/admin/page": "/admin"
+}

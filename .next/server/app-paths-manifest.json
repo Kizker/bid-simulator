@@ -1,0 +1,22 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/_global-error/page": "app/_global-error/page.js",
+  "/api/admin/auth/route": "app/api/admin/auth/route.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/auth/register/route": "app/api/auth/register/route.js",
+  "/api/auth/users/route": "app/api/auth/users/route.js",
+  "/api/bids/route": "app/api/bids/route.js",
+  "/api/bots/route": "app/api/bots/route.js",
+  "/api/rooms/import-json/route": "app/api/rooms/import-json/route.js",
+  "/api/rooms/reset/route": "app/api/rooms/reset/route.js",
+  "/api/rooms/route": "app/api/rooms/route.js",
+  "/api/schedule/route": "app/api/schedule/route.js",
+  "/api/users/route": "app/api/users/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/robots.txt/route": "app/robots.txt/route.js",
+  "/api/rooms/[id]/route": "app/api/rooms/[id]/route.js",
+  "/api/server-time/route": "app/api/server-time/route.js",
+  "/page": "app/page.js",
+  "/simulator/page": "app/simulator/page.js",
+  "/admin/page": "app/admin/page.js"
+}
