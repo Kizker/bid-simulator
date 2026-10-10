@@ -1,0 +1,25 @@
+services:
+  bid-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bid-simulator
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=file:/app/data/simulator.db
+      - NEXT_PUBLIC_ADMIN_USER=admin
+      - ADMIN_PASSWORD=admin123
+    volumes:
+      # Persistent volume for SQLite database storage
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/server-time || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

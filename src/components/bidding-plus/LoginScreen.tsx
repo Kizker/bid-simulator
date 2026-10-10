@@ -1,22 +1,58 @@
 "use client";
 
 import React, { useState } from "react";
+import { AlertCircle, ArrowRight, Loader2 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
+import type { User } from "@/db/schema";
 
 interface LoginScreenProps {
-  onSuccess: (phone: string) => void;
+  onSuccess: (user: User) => void;
+  onGoToRegister: () => void;
 }
 
-export function LoginScreen({ onSuccess }: LoginScreenProps) {
-  const [phoneNumber, setPhoneNumber] = useState("81373827173");
+export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [agreed, setAgreed] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [notRegistered, setNotRegistered] = useState(false);
 
-  const isFormValid = phoneNumber.trim().length >= 8 && agreed;
+  const isFormValid = phoneNumber.trim().length >= 8 && agreed && !isLoading;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isFormValid) {
-      onSuccess(phoneNumber);
+    if (!isFormValid) return;
+
+    setIsLoading(true);
+    setErrorMessage(null);
+    setNotRegistered(false);
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneNumber }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        if (res.status === 404 || !data.isRegistered) {
+          setNotRegistered(true);
+          setErrorMessage("Nomor handphone belum terdaftar! Anda belum bisa masuk sebelum mendaftar akun terlebih dahulu.");
+        } else {
+          setErrorMessage(data.error || "Gagal masuk ke sistem. Silakan periksa koneksi.");
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Success login
+      onSuccess(data.user);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMessage("Terjadi kendala jaringan saat menghubungi server.");
+      setIsLoading(false);
     }
   };
 
@@ -30,26 +66,71 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
 
       {/* Main Form Fields */}
       <form onSubmit={handleSubmit} className="w-full my-auto space-y-4 max-w-sm mx-auto">
-        {/* Phone Input Row */}
-        <div className="flex items-center gap-2">
-          {/* Country Code Pill */}
-          <div className="flex items-center gap-1.5 px-3 py-3 rounded-xl border border-slate-300 bg-white shadow-xs shrink-0">
-            {/* Indonesian Flag SVG */}
-            <div className="w-5 h-3.5 rounded-xs overflow-hidden border border-slate-200 flex flex-col shrink-0">
-              <div className="h-1/2 bg-[#FF0000]" />
-              <div className="h-1/2 bg-[#FFFFFF]" />
+        {/* Error Notification Alert */}
+        {errorMessage && (
+          <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex flex-col gap-2 animate-in fade-in">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+              <p className="flex-1 leading-snug">{errorMessage}</p>
             </div>
-            <span className="text-xs font-bold text-slate-800">+62</span>
+
+            {/* Quick button to register if phone not found */}
+            {notRegistered && (
+              <button
+                type="button"
+                onClick={onGoToRegister}
+                className="self-start mt-1 px-3 py-1.5 rounded-lg bg-[#0066D6] hover:bg-[#0055B8] text-white font-bold text-[11px] flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+              >
+                <span>Daftar Akun Baru Sekarang</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Phone Input Row */}
+        <div>
+          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+            Nomor Handphone
+          </label>
+          <div className="flex items-center gap-2">
+            {/* Country Code Pill */}
+            <div className="flex items-center gap-1.5 px-3 py-3 rounded-xl border border-slate-300 bg-white shadow-xs shrink-0">
+              {/* Indonesian Flag SVG */}
+              <div className="w-5 h-3.5 rounded-xs overflow-hidden border border-slate-200 flex flex-col shrink-0">
+                <div className="h-1/2 bg-[#FF0000]" />
+                <div className="h-1/2 bg-[#FFFFFF]" />
+              </div>
+              <span className="text-xs font-bold text-slate-800">+62</span>
+            </div>
+
+            {/* Number Input */}
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => {
+                setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""));
+                if (errorMessage) setErrorMessage(null);
+              }}
+              placeholder="81373827173"
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0066D6] transition shadow-xs"
+            />
           </div>
 
-          {/* Number Input */}
-          <input
-            type="tel"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""))}
-            placeholder="No. Handphone"
-            className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0066D6] transition shadow-xs"
-          />
+          {/* Quick Demo Helper Hint */}
+          <div className="mt-1.5 flex items-center justify-between text-[10px]">
+            <span className="text-slate-400">Belum terdaftar tidak bisa masuk</span>
+            <button
+              type="button"
+              onClick={() => {
+                setPhoneNumber("81373827173");
+                if (errorMessage) setErrorMessage(null);
+              }}
+              className="text-[#0066D6] font-semibold hover:underline cursor-pointer"
+            >
+              Gunakan Akun Demo
+            </button>
+          </div>
         </div>
 
         {/* Agreement Disclaimer Box */}
@@ -81,17 +162,18 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
         </div>
 
         {/* Submit Button */}
-        <div className="pt-8">
+        <div className="pt-4">
           <button
             type="submit"
             disabled={!isFormValid}
-            className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all shadow-sm ${
+            className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${
               isFormValid
                 ? "bg-[#0066D6] hover:bg-[#0055B8] text-white active:scale-[0.99] cursor-pointer"
                 : "bg-[#D1D5DB] text-slate-400 cursor-not-allowed"
             }`}
           >
-            Masuk
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+            <span>{isLoading ? "Memeriksa Akun..." : "Masuk"}</span>
           </button>
         </div>
       </form>
@@ -101,8 +183,8 @@ export function LoginScreen({ onSuccess }: LoginScreenProps) {
         <span>Belum Punya Akun ? </span>
         <button
           type="button"
-          onClick={() => alert("Fitur pendaftaran akun baru Bidding Plus.")}
-          className="text-[#0066D6] font-bold hover:underline"
+          onClick={onGoToRegister}
+          className="text-[#0066D6] font-bold hover:underline cursor-pointer"
         >
           Daftar Sekarang
         </button>

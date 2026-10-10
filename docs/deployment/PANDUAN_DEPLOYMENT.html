@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Panduan Resmi Deployment - BidPulse Simulator</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 18mm 16mm;
+      @bottom-right {
+        content: counter(page);
+        font-size: 9pt;
+        color: #64748b;
+      }
+    }
+    
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 10pt;
+      line-height: 1.55;
+      color: #1e293b;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Cover / Header Header */
+    .header-box {
+      background: linear-gradient(135deg, #0b1e3b 0%, #0066d6 100%);
+      color: #ffffff;
+      padding: 24px 28px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+
+    .header-box h1 {
+      margin: 0 0 6px 0;
+      font-size: 20pt;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .header-box p {
+      margin: 0;
+      font-size: 10.5pt;
+      color: #e2e8f0;
+    }
+
+    .badge-bar {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 8.5pt;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    /* Section Headings */
+    h2 {
+      font-size: 13pt;
+      font-weight: 800;
+      color: #0f172a;
+      border-bottom: 2px solid #0066d6;
+      padding-bottom: 5px;
+      margin-top: 24px;
+      margin-bottom: 12px;
+      page-break-after: avoid;
+    }
+
+    h3 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      page-break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 10px 0;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 16px 0;
+      font-size: 9pt;
+      page-break-inside: avoid;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+
+    /* Code Blocks */
+    pre {
+      background-color: #0f172a;
+      color: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 8.5pt;
+      line-height: 1.45;
+      overflow-x: auto;
+      margin: 8px 0 12px 0;
+      page-break-inside: avoid;
+      border: 1px solid #1e293b;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 8.5pt;
+      background-color: #f1f5f9;
+      color: #0066d6;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    pre code {
+      background-color: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    /* Callout Boxes */
+    .callout {
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin: 12px 0;
+      font-size: 9pt;
+      page-break-inside: avoid;
+    }
+
+    .callout-info {
+      background-color: #eff6ff;
+      border-left: 4px solid #0066d6;
+      color: #1e3a8a;
+    }
+
+    .callout-warning {
+      background-color: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      color: #92400e;
+    }
+
+    .callout-success {
+      background-color: #f0fdf4;
+      border-left: 4px solid #16a34a;
+      color: #166534;
+    }
+
+    .step-num {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      background-color: #0066d6;
+      color: #ffffff;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 22px;
+      font-size: 9pt;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    ul, ol {
+      margin: 0 0 12px 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER / COVER -->
+  <div class="header-box">
+    <h1>PANDUAN DEPLOYMENT SISTEM</h1>
+    <p>BidPulse — Real-Time Live Auction Simulator & CMS Controller</p>
+    <div class="badge-bar">
+      <span class="badge">🌐 Domain: simbid.labtry.my.id</span>
+      <span class="badge">🖥️ Server: 46.202.138.88:65002</span>
+      <span class="badge">📦 Target: public_html</span>
+      <span class="badge">⚡ Port: 3000</span>
+    </div>
+  </div>
+
+  <!-- RINGKASAN DATA KREDENSIAL -->
+  <h2>1. Informasi Server & Lingkungan Hosting</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 30%;">Parameter</th>
+        <th>Nilai Konfigurasi</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Alamat Domain</strong></td>
+        <td><code>simbid.labtry.my.id</code> (HTTPS aktif)</td>
+      </tr>
+      <tr>
+        <td><strong>Koneksi SSH</strong></td>
+        <td><code>ssh -p 65002 u141095167@46.202.138.88</code></td>
+      </tr>
+      <tr>
+        <td><strong>Direktori Tujuan</strong></td>
+        <td><code>~/domains/simbid.labtry.my.id/public_html</code></td>
+      </tr>
+      <tr>
+        <td><strong>Repository GitHub</strong></td>
+        <td><code>https://github.com/Kizker/bid-simulator.git</code></td>
+      </tr>
+      <tr>
+        <td><strong>Port Aplikasi Internal</strong></td>
+        <td><code>3000</code> (di-reverse proxy ke domain publik)</td>
+      </tr>
+      <tr>
+        <td><strong>Engine Runtime</strong></td>
+        <td>Docker Compose ATAU Node.js v20+ / PM2</td>
+      </tr>
+      <tr>
+        <td><strong>Database Engine</strong></td>
+        <td>SQLite (Persistent file di <code>./data/simulator.db</code>)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-info">
+    <strong>💡 Catatan Penting Arsitektur:</strong>
+    Aplikasi ini menggunakan <strong>Next.js App Router</strong> yang terintegrasi dengan custom HTTP server <strong>Socket.io</strong> (<code>server.ts</code>). Komunikasi dua arah WebSocket berjalan pada path <code>/api/socketio</code>. Web server hosting wajib meneruskan (reverse-proxy) header Upgrade WebSocket ke port 3000.
+  </div>
+
+  <!-- SETUP AWAL -->
+  <h2>2. Panduan Setup Awal (First-Time Setup)</h2>
+  <p>Lakukan langkah-langkah berikut sekali saja saat pertama kali menyiapkan aplikasi di server hosting:</p>
+
+  <h3><span class="step-num">1</span> Akses Server via SSH</h3>
+  <p>Buka terminal di komputer Anda, lalu masuk ke server hosting dengan perintah:</p>
+  <pre><code>ssh -p 65002 u141095167@46.202.138.88</code></pre>
+  <p><em>(Masukkan password akun hosting Anda saat diminta).</em></p>
+
+  <h3><span class="step-num">2</span> Masuk ke Direktori Domain & Bersihkan Folder Default</h3>
+  <pre><code>cd ~/domains/simbid.labtry.my.id/public_html
+
+# Opsional: Jika folder berisi file index.html default bawaan hosting, backup/hapus terlebih dahulu:
+rm -f default.php index.html</code></pre>
+
+  <h3><span class="step-num">3</span> Clone Repository dari GitHub</h3>
+  <pre><code># Clone repo ke direktori saat ini
+git clone https://github.com/Kizker/bid-simulator.git .</code></pre>
+
+  <h3><span class="step-num">4</span> Siapkan File Konfigurasi Environment (.env)</h3>
+  <p>Salin file template <code>.env.example</code> menjadi <code>.env</code>:</p>
+  <pre><code>cp .env.example .env
+
+# Buat folder data untuk database SQLite agar writable
+mkdir -p data logs</code></pre>
+
+  <div class="page-break"></div>
+
+  <!-- METODE DEPLOYMENT -->
+  <h2>3. Eksekusi Menjalankan Aplikasi (Pilih Metode)</h2>
+  <p>Server Hostinger Anda mendukung dua pilihan metode deployment:</p>
+
+  <!-- METODE A: DOCKER -->
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+    <h3 style="margin-top:0; color: #0066d6;">PILIHAN A: Menggunakan Docker & Docker Compose (Rekomendasi VPS)</h3>
+    <p>Jika server hosting Anda memiliki akses Docker Engine, cukup jalankan perintah:</p>
+    <pre><code># Build image dan jalankan container di background
+docker compose up -d --build
+
+# Cek status container yang berjalan
+docker compose ps
+
+# Cek log aplikasi real-time
+docker compose logs -f</code></pre>
+    <p class="callout callout-success" style="margin: 6px 0 0 0;">
+      Aplikasi akan langsung berjalan di container <code>bid-simulator</code> pada port 3000 dengan volume database otomatis tersimpan di folder host <code>./data</code>.
+    </p>
+  </div>
+
+  <!-- METODE B: NODE.JS / PM2 -->
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+    <h3 style="margin-top:0; color: #0d9488;">PILIHAN B: Menggunakan Node.js Native & PM2 (Rekomendasi Cloud / Shared)</h3>
+    <p>Jika server hosting tidak memiliki Docker, gunakan Node.js v20 dan PM2:</p>
+    <pre><code># 1. Pastikan pnpm tersedia (jika belum ada)
+npm install -g pnpm@12.6.0 pm2
+
+# 2. Instal dependensi proyek
+pnpm install --frozen-lockfile
+
+# 3. Kompilasi production build Next.js
+pnpm build
+
+# 4. Jalankan aplikasi menggunakan PM2
+pm2 start ecosystem.config.cjs
+
+# 5. Simpan state PM2 agar otomatis hidup saat server reboot
+pm2 save
+pm2 startup</code></pre>
+  </div>
+
+  <!-- REVERSE PROXY -->
+  <h2>4. Konfigurasi Reverse Proxy (.htaccess)</h2>
+  <p>Agar pengunjung domain <code>https://simbid.labtry.my.id</code> dapat mengakses aplikasi Next.js & Socket.io di port 3000, aktifkan file <code>.htaccess</code> di folder <code>public_html</code>:</p>
+  <pre><code>cp .htaccess.example .htaccess</code></pre>
+  <p>Isi konfigurasi <code>.htaccess</code> yang sudah disiapkan mencakup:</p>
+  <ul>
+    <li>Proxy pass seluruh request HTTP ke <code>http://127.0.0.1:3000</code>.</li>
+    <li>Proxy pass protokol WebSocket (<code>Upgrade: websocket</code>) ke <code>ws://127.0.0.1:3000</code>.</li>
+    <li>Header <code>X-Robots-Tag: noindex, nofollow</code> untuk proteksi Anti-SEO agar tidak masuk ke Google.</li>
+  </ul>
+
+  <div class="page-break"></div>
+
+  <!-- PROSEDUR UPDATE / DEPLOY LANJUTAN -->
+  <h2>5. Prosedur Deploy Lanjutan (Update / Perbaikan Kode)</h2>
+  <p>Ketika Anda telah melakukan perbaikan kode di laptop dan melakukan <code>git push</code> ke GitHub, berikut cara memperbarui aplikasi di server:</p>
+
+  <h3>Opsi 1: Otomatisasi 1-Klik via deploy.sh (Paling Cepat)</h3>
+  <p>Masuk ke server via SSH dan jalankan script otomatis:</p>
+  <pre><code>ssh -p 65002 u141095167@46.202.138.88
+cd ~/domains/simbid.labtry.my.id/public_html
+./deploy.sh</code></pre>
+  <p><em>Script ini akan otomatis melakukan <code>git pull</code>, rebuild, dan me-restart container/PM2 tanpa menghapus database.</em></p>
+
+  <h3>Opsi 2: Update Manual Bertahap</h3>
+  <table style="margin-top: 8px;">
+    <thead>
+      <tr>
+        <th style="width: 50%;">Jika Menggunakan Docker</th>
+        <th>Jika Menggunakan PM2 / Node.js</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <pre style="margin:0;"><code>git pull origin main
+docker compose build
+docker compose up -d</code></pre>
+        </td>
+        <td>
+          <pre style="margin:0;"><code>git pull origin main
+pnpm install
+pnpm build
+pm2 reload bid-simulator</code></pre>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- PANDUAN DATABASE -->
+  <h2>6. Manajemen Database SQLite & Keamanan Data</h2>
+  <ul>
+    <li><strong>Lokasi Database:</strong> Seluruh data unit lelang, akun pengguna, karakter bot, dan histori penawaran tersimpan di <code>data/simulator.db</code>.</li>
+    <li><strong>Sifat Persisten:</strong> File ini <strong>TIDAK AKAN HILANG</strong> saat update kode atau restart container karena sudah diproteksi oleh <code>.dockerignore</code> dan volume mount.</li>
+    <li><strong>Cara Backup Rutin:</strong> Cukup salin file database sebelum melakukan update besar:</li>
+  </ul>
+  <pre><code># Backup cepat database
+cp data/simulator.db data/simulator_backup_$(date +%Y%m%d_%H%M%S).db</code></pre>
+
+  <!-- TROUBLESHOOTING -->
+  <h2>7. Perintah Monitoring & Troubleshooting</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Kebutuhan</th>
+        <th>Perintah (Docker)</th>
+        <th>Perintah (PM2)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Melihat Status</strong></td>
+        <td><code>docker compose ps</code></td>
+        <td><code>pm2 status</code></td>
+      </tr>
+      <tr>
+        <td><strong>Melihat Log Real-Time</strong></td>
+        <td><code>docker compose logs -f --tail=50</code></td>
+        <td><code>pm2 logs bid-simulator</code></td>
+      </tr>
+      <tr>
+        <td><strong>Restart Aplikasi</strong></td>
+        <td><code>docker compose restart</code></td>
+        <td><code>pm2 restart bid-simulator</code></td>
+      </tr>
+      <tr>
+        <td><strong>Stop Aplikasi</strong></td>
+        <td><code>docker compose down</code></td>
+        <td><code>pm2 stop bid-simulator</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-success" style="margin-top: 20px;">
+    <strong>✅ Status Siap Live:</strong>
+    Setelah mengikuti prosedur di atas, buka browser dan akses <strong>https://simbid.labtry.my.id</strong> untuk penawaran mobile publik, dan <strong>https://simbid.labtry.my.id/admin</strong> untuk mengakses Pusat Kontrol Live Bidding.
+  </div>
+
+</body>
+</html>

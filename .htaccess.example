@@ -1,0 +1,26 @@
+# =========================================================================
+# Apache / OpenLiteSpeed Reverse Proxy configuration for Hostinger
+# For domain: simbid.labtry.my.id -> Local Next.js & Socket.io (Port 3000)
+# =========================================================================
+
+RewriteEngine On
+
+# 1. Reverse Proxy for Socket.IO WebSockets (ws:// and wss://)
+RewriteCond %{HTTP:Upgrade} =websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^(.*)$ ws://127.0.0.1:3000/$1 [P,L]
+
+# 2. Reverse Proxy for standard HTTP/HTTPS traffic
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L]
+
+# Proxy Settings
+<IfModule mod_proxy.c>
+    ProxyRequests Off
+    ProxyPreserveHost On
+    ProxyPassReverse / http://127.0.0.1:3000/
+</IfModule>
+
+# Security: Anti-SEO HTTP header enforcement
+Header set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"

@@ -1,126 +1,559 @@
-import Link from "next/link";
-import { Smartphone, Sliders, ShieldCheck, Zap, Bot, ArrowRight } from "lucide-react";
+"use client";
+
+import React, { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { MobileFrame } from "@/components/simulator/MobileFrame";
+import { LoginScreen } from "@/components/bidding-plus/LoginScreen";
+import { RegisterScreen } from "@/components/bidding-plus/RegisterScreen";
+import { HomeScreen } from "@/components/bidding-plus/HomeScreen";
+import { SessionsScreen } from "@/components/bidding-plus/SessionsScreen";
+import { CatalogScreen } from "@/components/bidding-plus/CatalogScreen";
+import { LiveDetailScreen } from "@/components/bidding-plus/LiveDetailScreen";
+import { WinningModal } from "@/components/simulator/WinningModal";
+import { getSocketClient } from "@/lib/socket-client";
+import type { AuctionRoom, Bid, SimulationConfig, User } from "@/db/schema";
+import type { BidModalState } from "@/components/bidding-plus/BidResponseModal";
+
+type ScreenType = "login" | "register" | "home" | "sessions" | "catalog" | "detail";
+
+function getDefaultStack(screen: ScreenType): ScreenType[] {
+  switch (screen) {
+    case "detail":
+      return ["home", "sessions", "catalog", "detail"];
+    case "catalog":
+      return ["home", "sessions", "catalog"];
+    case "sessions":
+      return ["home", "sessions"];
+    case "home":
+      return ["home"];
+    case "register":
+      return ["login", "register"];
+    case "login":
+    default:
+      return ["login"];
+  }
+}
+
+function MainAppContent() {
+  const searchParams = useSearchParams();
+
+  // Persistent Auth & Navigation state
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthLoaded, setIsAuthLoaded] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>("login");
+  const [historyStack, setHistoryStack] = useState<ScreenType[]>(["login"]);
+
+  // Auction data state
+  const [rooms, setRooms] = useState<AuctionRoom[]>([]);
+  const [selectedLot, setSelectedLot] = useState<AuctionRoom | null>(null);
+  const [bids, setBids] = useState<Bid[]>([]);
+  const [timeRemaining, setTimeRemaining] = useState<number>(45240); // 12h 34m
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showWinningModal, setShowWinningModal] = useState(false);
+  const [bidModal, setBidModal] = useState<BidModalState | null>(null);
+  const [sessionStartTime, setSessionStartTime] = useState<string>("17:00");
+
+  useEffect(() => {
+    fetch("/api/schedule")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && data.schedule?.publicStartTime) {
+          setSessionStartTime(data.schedule.publicStartTime);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // Restore session and last opened screen on reload
+  useEffect(() => {
+    try {
+      const savedUserStr = localStorage.getItem("bidding_user");
+      const savedScreen = localStorage.getItem("bidding_last_screen") as ScreenType | null;
+      const savedHistoryStr = localStorage.getItem("bidding_history_stack");
+      const urlScreen = searchParams?.get("screen") as ScreenType | null;
+
+      if (savedUserStr) {
+        const parsed = JSON.parse(savedUserStr) as User;
+        if (parsed?.name && parsed?.phone) {
+          setCurrentUser(parsed);
+
+          // Restore exact screen for logged in user
+          let targetScreen: ScreenType = urlScreen || savedScreen || "home";
+          if (targetScreen === "login" || targetScreen === "register") {
+            targetScreen = "home";
+          }
+
+          setCurrentScreen(targetScreen);
+
+          // Restore history stack so back button works smoothly
+          if (savedHistoryStr) {
+            try {
+              const parsedStack = JSON.parse(savedHistoryStr);
+              if (Array.isArray(parsedStack) && parsedStack.length > 0) {
+                setHistoryStack(parsedStack);
+              } else {
+                setHistoryStack(getDefaultStack(targetScreen));
+              }
+            } catch {
+              setHistoryStack(getDefaultStack(targetScreen));
+            }
+          } else {
+            setHistoryStack(getDefaultStack(targetScreen));
+          }
+
+          try {
+            localStorage.setItem("bidding_last_screen", targetScreen);
+          } catch {}
+        } else {
+          // Corrupted data, require login
+          localStorage.removeItem("bidding_user");
+          const targetScreen = savedScreen === "register" || urlScreen === "register" ? "register" : "login";
+          setCurrentScreen(targetScreen);
+          setHistoryStack([targetScreen]);
+        }
+      } else {
+        // Not logged in: remember if user was on register or login
+        const targetScreen = savedScreen === "register" || urlScreen === "register" ? "register" : "login";
+        setCurrentScreen(targetScreen);
+        setHistoryStack([targetScreen]);
+      }
+    } catch (e) {
+      console.warn("Failed to restore saved user/screen state:", e);
+      setCurrentScreen("login");
+    } finally {
+      setIsAuthLoaded(true);
+    }
+  }, [searchParams]);
+
+  // Safe fetch all rooms from API
+  const fetchAllRooms = async () => {
+    try {
+      const res = await fetch("/api/rooms");
+      if (!res.ok) {
+        console.warn("API /api/rooms returned non-200 status:", res.status);
+        return;
+      }
+      const data = await res.json();
+      if (data?.success && Array.isArray(data?.rooms)) {
+        setRooms(data.rooms);
+
+        if (data.rooms.length > 0) {
+          // Determine which lot was opened
+          const lotFromUrl = searchParams?.get("lot");
+          const lotFromStorage = typeof window !== "undefined" ? localStorage.getItem("bidding_last_lot_id") : null;
+          const targetLotId = lotFromUrl || lotFromStorage || data.rooms[0].id;
+
+          const matched = data.rooms.find((r: AuctionRoom) => r.id === targetLotId) || data.rooms[0];
+          if (matched) {
+            setSelectedLot(matched);
+            setTimeRemaining(matched.timeRemaining);
+          }
+        } else {
+          setSelectedLot(null);
+        }
+      }
+    } catch (e) {
+      console.error("Gagal mengambil data rooms:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllRooms();
+  }, []);
+
+  // Connect to Socket.io for live updates
+  useEffect(() => {
+    if (!selectedLot) return;
+    const socket = getSocketClient();
+
+    socket.emit("join_room", selectedLot.id);
+
+    socket.on("initial_state", (data: { room: AuctionRoom; config: SimulationConfig; recentBids: Bid[] }) => {
+      setSelectedLot(data.room);
+      setBids(data.recentBids);
+      setTimeRemaining(data.room.timeRemaining);
+      if (data.room.status === "ENDED") {
+        setShowWinningModal(true);
+      }
+    });
+
+    socket.on("timer_tick", (data: { roomId: string; timeRemaining: number }) => {
+      if (data.roomId === selectedLot?.id) {
+        setTimeRemaining(data.timeRemaining);
+      }
+    });
+
+    socket.on("bid_placed", (data: { bid: Bid; room: AuctionRoom; antiSnipingTriggered: boolean }) => {
+      // Selalu perbarui daftar katalog di background
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.id === data.room.id
+            ? { ...r, currentPrice: data.room.currentPrice, totalBids: data.room.totalBids }
+            : r
+        )
+      );
+
+      // KETENTUAN USER: sistem refresh tidak bisa langsung masuk setiap ada yang baru menawar.
+      // Hanya perbarui room aktif jika penawaran berasal dari USER sendiri.
+      // Jika penawaran berasal dari BOT / penawar lain, JANGAN update room view yang sedang terbuka secara otomatis!
+      if (data.room.id === selectedLot?.id && data.bid.bidderType === "USER") {
+        setSelectedLot(data.room);
+        setTimeRemaining(data.room.timeRemaining);
+        setBids((prev) => [data.bid, ...prev.filter((b) => b.id !== data.bid.id)]);
+      }
+    });
+
+    socket.on("room_updated", (updated: AuctionRoom) => {
+      setRooms((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+
+      if (updated.id === selectedLot?.id) {
+        if (updated.status === "ENDED") {
+          setSelectedLot((prev) => (prev ? { ...prev, status: "ENDED" } : updated));
+          setShowWinningModal(true);
+          return;
+        }
+
+        // Jangan auto-update harga/penawar tertinggi di dalam room jika bukan penawaran user sendiri
+        // Hanya update jika user sendiri atau jika room status diubah (PAUSED / UPCOMING / RESET)
+        if (updated.highestBidderType === "USER" || updated.status !== "ACTIVE") {
+          setSelectedLot(updated);
+          setTimeRemaining(updated.timeRemaining);
+        }
+      }
+    });
+
+    socket.on("bids_cleared", (data: { roomId: string }) => {
+      if (data.roomId === selectedLot?.id) {
+        setBids([]);
+        setShowWinningModal(false);
+      }
+    });
+
+    socket.on("auction_ended", (data: { roomId: string }) => {
+      if (data.roomId === selectedLot?.id) {
+        setShowWinningModal(true);
+      }
+    });
+
+    socket.on("bid_success", () => {
+      setIsSubmitting(false);
+      const numMatch = selectedLot?.id.match(/\d+/);
+      const lotNum = numMatch ? numMatch[0].padStart(2, "0") : "01";
+      setBidModal({
+        isOpen: true,
+        type: "success",
+        title: "Berhasil",
+        message: `Berhasil Menawar Produk #${lotNum}`,
+      });
+    });
+
+    socket.on(
+      "bid_error",
+      (err: {
+        message: string;
+        code?: string;
+        latestRoom?: AuctionRoom;
+        latestBids?: Bid[];
+      }) => {
+        setIsSubmitting(false);
+
+        // KETENTUAN USER: klik tawar untuk merefresh
+        // Ketika klik tawar dan mendapat respon penolakan (misal PRICE_TOO_LOW),
+        // update data room dan recentBids dengan data server terkini!
+        if (err.latestRoom && err.latestRoom.id === selectedLot?.id) {
+          setSelectedLot(err.latestRoom);
+          setTimeRemaining(err.latestRoom.timeRemaining);
+        }
+        if (err.latestBids) {
+          setBids(err.latestBids);
+        }
+
+        if (err.code === "PRICE_TOO_LOW") {
+          setBidModal({
+            isOpen: true,
+            type: "error",
+            title: "Gagal",
+            message: "Harga tidak boleh sama atau kurang dari tawaran sebelumnya",
+            code: "PRICE_TOO_LOW",
+          });
+        } else if (err.code === "ALREADY_HIGHEST") {
+          setBidModal({
+            isOpen: true,
+            type: "error",
+            title: "Gagal",
+            message: err.message || "Harap menunggu user lain untuk menawar",
+            code: "ALREADY_HIGHEST",
+          });
+        } else {
+          setBidModal({
+            isOpen: true,
+            type: "error",
+            title: "Gagal",
+            message: err.message || "Terjadi Kesalahan",
+            code: err.code,
+          });
+        }
+      }
+    );
+
+    return () => {
+      socket.emit("leave_room", selectedLot.id);
+      socket.off("initial_state");
+      socket.off("timer_tick");
+      socket.off("bid_placed");
+      socket.off("room_updated");
+      socket.off("bids_cleared");
+      socket.off("auction_ended");
+      socket.off("bid_success");
+      socket.off("bid_error");
+    };
+  }, [selectedLot?.id]);
+
+  // Navigation handlers with persistence
+  const navigateTo = (next: ScreenType) => {
+    setHistoryStack((prev) => {
+      const updated = [...prev, next];
+      try {
+        localStorage.setItem("bidding_history_stack", JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    setCurrentScreen(next);
+    try {
+      localStorage.setItem("bidding_last_screen", next);
+    } catch {}
+  };
+
+  const handleBack = () => {
+    if (historyStack.length > 1) {
+      const newStack = [...historyStack];
+      newStack.pop();
+      const prev = newStack[newStack.length - 1];
+
+      // If user is logged in, going back should never trap into login/register
+      if (currentUser && (prev === "login" || prev === "register")) {
+        setHistoryStack(["home"]);
+        setCurrentScreen("home");
+        try {
+          localStorage.setItem("bidding_last_screen", "home");
+          localStorage.setItem("bidding_history_stack", JSON.stringify(["home"]));
+        } catch {}
+        return;
+      }
+
+      setHistoryStack(newStack);
+      setCurrentScreen(prev);
+      try {
+        localStorage.setItem("bidding_last_screen", prev);
+        localStorage.setItem("bidding_history_stack", JSON.stringify(newStack));
+      } catch {}
+    } else {
+      let prev: ScreenType = "home";
+      if (currentScreen === "detail") prev = "catalog";
+      else if (currentScreen === "catalog") prev = "sessions";
+      else if (currentScreen === "sessions") prev = "home";
+      else if (currentScreen === "home") {
+        return;
+      } else if (currentScreen === "register") {
+        prev = "login";
+      }
+
+      setCurrentScreen(prev);
+      try {
+        localStorage.setItem("bidding_last_screen", prev);
+      } catch {}
+    }
+  };
+
+  const handlePlaceBid = (amount: number, clientPrice?: number) => {
+    if (!selectedLot) return;
+    setIsSubmitting(true);
+    const socket = getSocketClient();
+    socket.emit("place_bid", {
+      roomId: selectedLot.id,
+      bidderName: "Kamu",
+      amount,
+      clientPrice: clientPrice ?? selectedLot.currentPrice,
+    });
+  };
+
+  const handleSelectLot = (lot: AuctionRoom) => {
+    setSelectedLot(lot);
+    try {
+      localStorage.setItem("bidding_last_lot_id", lot.id);
+    } catch {}
+
+    // KETENTUAN USER: keluar ke katalog dulu baru masuk ke room bid barang lagi
+    // agar mendapatkan data penawaran paling atas
+    const socket = getSocketClient();
+    socket.emit("join_room", lot.id);
+
+    navigateTo("detail");
+  };
+
+  // Pastikan saat masuk kembali ke screen detail, room data selalu disinkronkan dengan data terbaru server
+  useEffect(() => {
+    if (currentScreen === "detail" && selectedLot) {
+      const socket = getSocketClient();
+      socket.emit("join_room", selectedLot.id);
+    }
+  }, [currentScreen]);
+
+  // Explicit Logout: user only exits session if this function is triggered
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem("bidding_user");
+      localStorage.removeItem("bidding_last_lot_id");
+      localStorage.removeItem("bidding_home_tab");
+      localStorage.setItem("bidding_last_screen", "login");
+      localStorage.setItem("bidding_history_stack", JSON.stringify(["login"]));
+    } catch {}
+    setHistoryStack(["login"]);
+    setCurrentScreen("login");
+  };
+
+  // Successful Login / Register handler: save persistent session
+  const handleAuthSuccess = (user: User) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem("bidding_user", JSON.stringify(user));
+      localStorage.setItem("bidding_last_screen", "home");
+      localStorage.setItem("bidding_history_stack", JSON.stringify(["home"]));
+    } catch {}
+    setHistoryStack(["home"]);
+    setCurrentScreen("home");
+  };
+
+  // Wait until localStorage check is complete to avoid screen flicker
+  if (!isAuthLoaded || (currentScreen === "detail" && !selectedLot && rooms.length === 0)) {
+    return (
+      <MobileFrame>
+        <div className="flex-1 flex flex-col items-center justify-center bg-white text-slate-400 text-xs font-mono">
+          <div className="w-8 h-8 rounded-full border-2 border-[#0066D6] border-t-transparent animate-spin mb-3" />
+          <span>Memuat Bidding Plus...</span>
+        </div>
+      </MobileFrame>
+    );
+  }
+
+  return (
+    <MobileFrame
+      activeScreen={currentScreen}
+      onNavigateScreen={(screen: ScreenType) => {
+        navigateTo(screen);
+      }}
+      onAndroidBack={handleBack}
+      onAndroidHome={() => {
+        if (currentUser) {
+          setHistoryStack(["home"]);
+          setCurrentScreen("home");
+          try {
+            localStorage.setItem("bidding_last_screen", "home");
+            localStorage.setItem("bidding_history_stack", JSON.stringify(["home"]));
+          } catch {}
+        } else {
+          setCurrentScreen("login");
+        }
+      }}
+    >
+      {/* 1. Layar Masuk (Login) */}
+      {currentScreen === "login" && (
+        <LoginScreen
+          onSuccess={handleAuthSuccess}
+          onGoToRegister={() => navigateTo("register")}
+        />
+      )}
+
+      {/* 2. Layar Pendaftaran Akun Baru (Register) */}
+      {currentScreen === "register" && (
+        <RegisterScreen
+          onBackToLogin={() => navigateTo("login")}
+          onSuccess={handleAuthSuccess}
+        />
+      )}
+
+      {/* 3. Layar Beranda */}
+      {currentScreen === "home" && (
+        <HomeScreen
+          user={currentUser}
+          onLogout={handleLogout}
+          onSelectCategory={(category) => {
+            if (category === "Handphone") {
+              navigateTo("sessions");
+            } else {
+              alert(`Kategori ${category} akan segera hadir.`);
+            }
+          }}
+        />
+      )}
+
+      {/* 4. Layar Pilihan Sesi Handphone */}
+      {currentScreen === "sessions" && (
+        <SessionsScreen
+          categoryTitle="Handphone"
+          rooms={rooms}
+          onBack={handleBack}
+          onSelectSession={(sessionType) => {
+            if (sessionType === "reguler") {
+              navigateTo("catalog");
+            } else {
+              alert(`Sesi ${sessionType} dibuka pukul ${sessionStartTime}.`);
+            }
+          }}
+        />
+      )}
+
+      {/* 5. Layar Katalog Bidding Reguler */}
+      {currentScreen === "catalog" && (
+        <CatalogScreen
+          rooms={rooms}
+          onBack={handleBack}
+          onSelectLot={handleSelectLot}
+        />
+      )}
+
+      {/* 6. Layar Live Bidding Room & Detail Lot */}
+      {currentScreen === "detail" && selectedLot && (
+        <LiveDetailScreen
+          room={selectedLot}
+          bids={bids}
+          timeRemaining={timeRemaining}
+          onBack={handleBack}
+          onPlaceBid={handlePlaceBid}
+          isSubmitting={isSubmitting}
+          bidModal={bidModal}
+          onCloseBidModal={() => setBidModal(null)}
+        />
+      )}
+
+      {/* Winning Celebration Modal */}
+      {showWinningModal && selectedLot && (
+        <WinningModal
+          room={selectedLot}
+          userName={currentUser?.name || "Kamu"}
+          onReset={() => {
+            const socket = getSocketClient();
+            socket.emit("admin_command", { action: "RESET", roomId: selectedLot.id });
+            setShowWinningModal(false);
+          }}
+          onClose={() => setShowWinningModal(false)}
+        />
+      )}
+    </MobileFrame>
+  );
+}
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#070A11] text-slate-100 flex flex-col justify-between p-6 relative overflow-hidden selection:bg-amber-500 selection:text-black">
-      {/* Background ambient glow */}
-      <div className="absolute top-0 left-1/3 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
-
-      {/* Top Brand Bar */}
-      <header className="max-w-5xl mx-auto w-full flex items-center justify-between py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-black font-extrabold text-base shadow-lg shadow-amber-500/20">
-            BP
-          </div>
-          <div>
-            <h1 className="font-extrabold text-lg tracking-tight text-white">BidPulse</h1>
-            <p className="text-[10px] text-slate-400 font-mono">Live Auction Simulation Suite</p>
-          </div>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center text-slate-500 text-xs font-mono">
+          Memuat Bidding Plus...
         </div>
-
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Socket.io & SQLite Online
-          </span>
-        </div>
-      </header>
-
-      {/* Main Hero & Dual Entry Cards */}
-      <main className="max-w-4xl mx-auto w-full my-auto py-12 flex flex-col items-center text-center">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold mb-6">
-          <Zap className="w-3.5 h-3.5 text-amber-400" />
-          <span>Real-time Engine · Mobile-First UI · AI Bidding Bots</span>
-        </div>
-
-        <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight max-w-2xl leading-tight">
-          Simulator Penawaran Lelang Interaktif & CMS Controller
-        </h2>
-
-        <p className="text-sm sm:text-base text-slate-400 mt-4 max-w-xl">
-          Platform simulasi lelang berbasis web dengan tampilan mobile yang responsif, bot cerdas otomatis, dan panel kontrol admin untuk skenario simulasi.
-        </p>
-
-        {/* Dual Portal Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full mt-10">
-          {/* Mobile Simulator Card */}
-          <Link
-            href="/simulator"
-            className="group relative p-6 rounded-3xl bg-gradient-to-b from-[#111827] to-[#0D121F] border border-slate-700/80 hover:border-amber-500/60 transition-all duration-300 text-left shadow-xl hover:shadow-2xl hover:shadow-amber-500/10 hover:-translate-y-1"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition">
-              <Smartphone className="w-6 h-6" />
-            </div>
-
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
-              Antarmuka Peserta
-            </span>
-
-            <h3 className="text-lg font-bold text-white mt-2 group-hover:text-amber-300 transition">
-              Buka Mobile Simulator
-            </h3>
-            <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              Tampilan mobile-first lelang live dengan countdown timer, quick bid chips, sound FX, dan feed penawaran real-time.
-            </p>
-
-            <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-amber-400 group-hover:translate-x-1 transition">
-              <span>Masuk Simulasi</span>
-              <ArrowRight className="w-4 h-4" />
-            </div>
-          </Link>
-
-          {/* CMS Admin Controller Card */}
-          <Link
-            href="/admin"
-            className="group relative p-6 rounded-3xl bg-gradient-to-b from-[#111827] to-[#0D121F] border border-slate-700/80 hover:border-blue-500/60 transition-all duration-300 text-left shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/40 text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition">
-              <Sliders className="w-6 h-6" />
-            </div>
-
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-blue-400 px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
-              Antarmuka Pengelola
-            </span>
-
-            <h3 className="text-lg font-bold text-white mt-2 group-hover:text-blue-300 transition">
-              Buka CMS Controller
-            </h3>
-            <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              Panel kendali lelang: mulai/jeda timer, tambah waktu darurat, atur agresivitas bot AI, trigger bid manual, dan audit logs.
-            </p>
-
-            <div className="mt-5 flex items-center gap-1.5 text-xs font-bold text-blue-400 group-hover:translate-x-1 transition">
-              <span>Buka Dashboard</span>
-              <ArrowRight className="w-4 h-4" />
-            </div>
-          </Link>
-        </div>
-
-        {/* Feature Pills */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mt-8 text-xs text-slate-400">
-          <div className="flex items-center gap-1.5">
-            <Bot className="w-3.5 h-3.5 text-amber-400" />
-            <span>Bot AI (Sniper & Aggressive)</span>
-          </div>
-          <span className="text-slate-700">·</span>
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Anti-Sniping Rule Engine</span>
-          </div>
-          <span className="text-slate-700">·</span>
-          <div className="flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-purple-400" />
-            <span>Latency &lt;50ms via Socket.io</span>
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="max-w-5xl mx-auto w-full text-center text-xs text-slate-500 py-4 border-t border-slate-800/60">
-        BidPulse Simulator & CMS · Powered by Next.js 15, Socket.io, & Drizzle SQLite.
-      </footer>
-    </div>
+      }
+    >
+      <MainAppContent />
+    </Suspense>
   );
 }

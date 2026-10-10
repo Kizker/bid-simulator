@@ -15,6 +15,8 @@ app.prepare().then(async () => {
   await simulationEngine.init();
 
   const httpServer = createServer((req, res) => {
+    // Anti-SEO: Blokir mutlak pengindeksan oleh search engine (Google, Bing, dll.)
+    res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
     handle(req, res);
   });
 

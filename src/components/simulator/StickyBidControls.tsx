@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { Gavel, Plus, Sparkles, User, AlertCircle } from "lucide-react";
 import type { AuctionRoom } from "@/db/schema";
-import { soundFX } from "@/lib/audio";
 
 interface StickyBidControlsProps {
   room: AuctionRoom;
@@ -33,7 +32,6 @@ export function StickyBidControls({
   const handleBidClick = () => {
     if (!isAuctionActive || isUserHighest || isSubmitting) return;
 
-    soundFX.playBidSuccess();
     onPlaceBid(nextBidAmount);
   };
 

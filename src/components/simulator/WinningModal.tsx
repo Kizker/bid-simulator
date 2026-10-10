@@ -4,7 +4,6 @@ import React, { useEffect } from "react";
 import confetti from "canvas-confetti";
 import { Trophy, Award, RotateCcw, ArrowRight, X } from "lucide-react";
 import type { AuctionRoom } from "@/db/schema";
-import { soundFX } from "@/lib/audio";
 
 interface WinningModalProps {
   room: AuctionRoom;
@@ -17,9 +16,6 @@ export function WinningModal({ room, userName, onReset, onClose }: WinningModalP
   const isUserWinner = room.highestBidderName === userName;
 
   useEffect(() => {
-    // Sound hammer gong
-    soundFX.playGong();
-
     // Trigger confetti if user is winner
     if (isUserWinner) {
       const end = Date.now() + 2.5 * 1000;

@@ -39,6 +39,42 @@ export function initSocketServer(io: SocketIOServer, engine: SimulationEngine) {
         io.emit("admin_config_updated", payload);
         break;
       }
+      case "schedule_updated": {
+        io.emit("schedule_updated", payload);
+        break;
+      }
+      case "schedule_applied": {
+        io.emit("schedule_applied", payload);
+        break;
+      }
+      case "session_started": {
+        io.emit("session_started", payload);
+        break;
+      }
+      case "session_ended": {
+        io.emit("session_ended", payload);
+        break;
+      }
+      case "all_rooms_paused": {
+        io.emit("all_rooms_paused", payload);
+        break;
+      }
+      case "all_rooms_started": {
+        io.emit("all_rooms_started", payload);
+        break;
+      }
+      case "all_configs_updated": {
+        io.emit("all_configs_updated", payload);
+        break;
+      }
+      case "all_bots_paused": {
+        io.emit("all_bots_paused", payload);
+        break;
+      }
+      case "all_bots_started": {
+        io.emit("all_bots_started", payload);
+        break;
+      }
     }
   });
 
@@ -53,7 +89,27 @@ export function initSocketServer(io: SocketIOServer, engine: SimulationEngine) {
           config: state.config,
           recentBids: state.recentBids,
         });
+
+        // Jika posisi pengguna sudah di atas saat masuk ruang, jadwalkan penawar lain setelah 6-9 detik
+        if (state.room.highestBidderType === "USER" || state.room.highestBidderName === "Kamu") {
+          engine.scheduleCompetitorResponse(roomId, 6000, 9000);
+        }
       }
+    });
+
+    socket.on("request_competitor_bid", (data: { roomId: string }) => {
+      engine.scheduleCompetitorResponse(data.roomId, 3000, 5000);
+    });
+
+    socket.on("get_schedule", () => {
+      socket.emit("schedule_updated", engine.getScheduleInfo());
+    });
+
+    socket.on("get_server_time", (clientSentTime?: number) => {
+      socket.emit("server_time", {
+        clientSentTime,
+        serverTime: Date.now(),
+      });
     });
 
     socket.on("leave_room", (roomId: string) => {
@@ -61,25 +117,95 @@ export function initSocketServer(io: SocketIOServer, engine: SimulationEngine) {
     });
 
     // Mobile simulator client places a bid
-    socket.on("place_bid", async (data: { roomId: string; bidderName: string; amount: number }) => {
+    socket.on("place_bid", async (data: { roomId: string; bidderName: string; amount: number; clientPrice?: number }) => {
       const result = await engine.placeBid({
         roomId: data.roomId,
         bidderName: data.bidderName || "Kamu",
         bidderType: "USER",
         amount: data.amount,
+        clientPrice: data.clientPrice,
       });
 
       if (!result.success) {
-        socket.emit("bid_error", { message: result.message });
+        if (result.code === "ALREADY_HIGHEST") {
+          engine.scheduleCompetitorResponse(data.roomId, 3000, 5000);
+        }
+        const state = engine.getRoomState(data.roomId);
+        socket.emit("bid_error", {
+          message: result.message,
+          code: result.code,
+          latestRoom: state?.room,
+          latestBids: state?.recentBids,
+        });
       } else {
-        socket.emit("bid_success", { bid: result.bid });
+        socket.emit("bid_success", { bid: result.bid, roomId: data.roomId });
       }
     });
 
-    // Admin CMS commands
-    socket.on("admin_command", async (data: { action: string; roomId: string; payload?: any }) => {
+    // Admin CMS commands (Support both Global Command and Single-Unit Command)
+    socket.on("admin_command", async (data: { action: string; roomId?: string; payload?: any }) => {
       const { action, roomId, payload } = data;
 
+      // 1. GLOBAL COMMAND (Affecting ALL auction rooms)
+      if (!roomId || roomId === "ALL") {
+        console.log(`📡 [AdminCommand] Received global action: ${action}`);
+        switch (action) {
+          case "START_BOTS":
+          case "START":
+          case "START_ALL":
+            engine.startAllBots();
+            break;
+          case "PAUSE_BOTS":
+          case "PAUSE":
+          case "PAUSE_ALL":
+            engine.pauseAllBots();
+            break;
+          case "START_ROOMS":
+            engine.startAllRooms();
+            break;
+          case "PAUSE_ROOMS":
+            engine.pauseAllRooms();
+            break;
+          case "RESET":
+          case "RESET_ALL":
+            engine.resetAllRooms();
+            break;
+          case "END_ALL":
+            engine.endAllRooms();
+            break;
+          case "UPDATE_SCHEDULE":
+            if (payload) {
+              await engine.setSessionSchedule(
+                payload.startTime,
+                payload.endTime,
+                payload.autoSync !== undefined ? payload.autoSync : true,
+                payload.applyNow !== undefined ? payload.applyNow : true
+              );
+            }
+            break;
+          case "APPLY_SCHEDULE":
+            engine.applyScheduleToAllRooms(true);
+            break;
+          case "ADD_TIME":
+          case "ADD_TIME_ALL":
+            engine.addTimeToAllRooms(payload?.seconds || 30);
+            break;
+          case "UPDATE_CONFIG":
+          case "UPDATE_ALL_CONFIG":
+            engine.updateAllConfigs(payload || {});
+            break;
+          case "TRIGGER_RANDOM_BOT":
+          case "FORCE_BOT_BID":
+            await engine.triggerRandomBotBid();
+            break;
+          case "RELOAD_DB":
+            await engine.reloadFromDatabase();
+            break;
+        }
+        return;
+      }
+
+      // 2. SINGLE UNIT COMMAND (Fallback for individual room control)
       switch (action) {
         case "START":
           engine.startTimer(roomId);
@@ -98,6 +224,9 @@ export function initSocketServer(io: SocketIOServer, engine: SimulationEngine) {
           break;
         case "UPDATE_CONFIG":
           engine.updateConfig(roomId, payload);
+          break;
+        case "RELOAD_DB":
+          await engine.reloadFromDatabase(roomId);
           break;
       }
     });

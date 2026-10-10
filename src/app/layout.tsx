@@ -17,6 +17,19 @@ const monoFont = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "BidPulse — Live Auction Simulator & CMS",
   description: "Web-based real-time mobile bid simulator with admin CMS controller and automated AI bidding bots.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      "max-video-preview": -1,
+      "max-image-preview": "none",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export const viewport: Viewport = {
@@ -33,6 +46,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className={`${jakartaSans.variable} ${monoFont.variable} dark h-full antialiased`}>
+      <head>
+        {/* Anti-SEO: Mencegah Google dan mesin pencari lainnya mengindeks halaman ini */}
+        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+        <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+        <meta name="google" content="nositelinkssearchbox" />
+        <meta name="google" content="notranslate" />
+      </head>
       <body className="min-h-full bg-[#090D16] text-[#F1F5F9] font-sans flex flex-col selection:bg-amber-500 selection:text-black">
         {children}
       </body>

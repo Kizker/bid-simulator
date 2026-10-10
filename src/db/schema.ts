@@ -13,7 +13,7 @@ export const auctionRooms = sqliteTable("auction_rooms", {
   imageUrl: text("image_url").notNull(),
   startingPrice: integer("starting_price").notNull(),
   currentPrice: integer("current_price").notNull(),
-  bidIncrement: integer("bid_increment").notNull().default(50000),
+  bidIncrement: integer("bid_increment").notNull().default(20000),
   reservePrice: integer("reserve_price").notNull().default(0),
   status: text("status", { enum: ["DRAFT", "UPCOMING", "ACTIVE", "PAUSED", "ENDED"] })
     .notNull()
@@ -57,8 +57,48 @@ export const simulationConfigs = sqliteTable("simulation_configs", {
   antiSnipingEnabled: integer("anti_sniping_enabled").notNull().default(1),
 });
 
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  phone: text("phone").notNull().unique(),
+  email: text("email"),
+  city: text("city").default("Jakarta"),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+export const botProfiles = sqliteTable("bot_profiles", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  personality: text("personality", {
+    enum: ["AGGRESSIVE", "SNIPER", "CASUAL", "CONSERVATIVE", "ERRATIC"],
+  })
+    .notNull()
+    .default("CASUAL"),
+  avatarUrl: text("avatar_url"),
+  minDelaySec: integer("min_delay_sec").notNull().default(2),
+  maxDelaySec: integer("max_delay_sec").notNull().default(5),
+  maxBudget: integer("max_budget").notNull().default(0), // 0 = unlimited
+  isActive: integer("is_active").notNull().default(1), // 1 = active, 0 = disabled
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
 export type AuctionRoom = typeof auctionRooms.$inferSelect;
 export type NewAuctionRoom = typeof auctionRooms.$inferInsert;
 export type Bid = typeof bids.$inferSelect;
 export type NewBid = typeof bids.$inferInsert;
 export type SimulationConfig = typeof simulationConfigs.$inferSelect;
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type AppSetting = typeof appSettings.$inferSelect;
+export type NewAppSetting = typeof appSettings.$inferInsert;
+export type BotProfile = typeof botProfiles.$inferSelect;
+export type NewBotProfile = typeof botProfiles.$inferInsert;
+

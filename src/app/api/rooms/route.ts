@@ -6,6 +6,13 @@ import { simulationEngine } from "@/server/engine";
 
 export async function GET() {
   try {
+    if (simulationEngine) {
+      await simulationEngine.init();
+      const liveRooms = simulationEngine.getAllRooms();
+      if (liveRooms.length > 0) {
+        return NextResponse.json({ success: true, rooms: liveRooms });
+      }
+    }
     const rooms = await db.select().from(auctionRooms).orderBy(desc(auctionRooms.createdAt));
     return NextResponse.json({ success: true, rooms });
   } catch (error: any) {
@@ -32,7 +39,7 @@ export async function POST(req: Request) {
       imageUrl: body.imageUrl || "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=600&q=80",
       startingPrice: Number(body.startingPrice) || 3551000,
       currentPrice: Number(body.startingPrice) || 3551000,
-      bidIncrement: Number(body.bidIncrement) || 50000,
+      bidIncrement: Number(body.bidIncrement) || 20000,
       reservePrice: Number(body.reservePrice) || 0,
       status: "ACTIVE" as const,
       totalDurationSeconds: Number(body.totalDurationSeconds) || 45240,

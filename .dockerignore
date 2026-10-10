@@ -1,0 +1,32 @@
+# Docker Ignore Rules
+node_modules
+.next
+.git
+.gitignore
+.dockerignore
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store
+
+# Local database files
+data/*.db
+data/*.db-wal
+data/*.db-journal
+
+# Documentation and tests
+docs/
+scratch/
+.system_generated/
+*.md
+!README.md
+
+# macOS system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+AppleDouble
+Network Trash Folder

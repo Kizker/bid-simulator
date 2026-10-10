@@ -1,40 +1,102 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronLeft } from "lucide-react";
+import type { AuctionRoom } from "@/db/schema";
 
 interface SessionsScreenProps {
   categoryTitle?: string;
+  rooms?: AuctionRoom[];
+  totalUnits?: number;
   onBack: () => void;
   onSelectSession: (sessionType: string) => void;
 }
 
 export function SessionsScreen({
   categoryTitle = "Handphone",
+  rooms = [],
+  totalUnits,
   onBack,
   onSelectSession,
 }: SessionsScreenProps) {
+  const [internalRooms, setInternalRooms] = useState<AuctionRoom[]>(rooms);
+
+  useEffect(() => {
+    if (rooms && rooms.length > 0) {
+      setInternalRooms(rooms);
+    } else {
+      fetch("/api/rooms")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.success && Array.isArray(data.rooms)) {
+            setInternalRooms(data.rooms);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [rooms]);
+
+  // Calculate units dynamically based on available rooms
+  const regularUnits =
+    totalUnits !== undefined
+      ? totalUnits
+      : internalRooms.reduce((sum, r) => sum + (r.stock || 1), 0) || internalRooms.length;
+
+  const demoUnits = internalRooms
+    .filter(
+      (r) =>
+        r.title.toLowerCase().includes("demo") ||
+        r.title.toLowerCase().includes("ldu")
+    )
+    .reduce((sum, r) => sum + (r.stock || 1), 0);
+
+  const bundlingUnits = internalRooms
+    .filter((r) => r.title.toLowerCase().includes("bundling"))
+    .reduce((sum, r) => sum + (r.stock || 1), 0);
+
+  const [schedule, setSchedule] = useState({
+    publicStartTime: "17:00",
+    publicEndTime: "08:00",
+  });
+
+  useEffect(() => {
+    fetch("/api/schedule")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && data.schedule) {
+          setSchedule({
+            publicStartTime: data.schedule.publicStartTime || "17:00",
+            publicEndTime: data.schedule.publicEndTime || "08:00",
+          });
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   const sessions = [
     {
       id: "reguler",
       title: "Bidding Reguler",
       status: "BUKA",
-      openTime: "Rabu,Pukul 17:00",
-      closeTime: "Kamis, Pukul 08:00",
+      openTime: `Rabu,Pukul ${schedule.publicStartTime}`,
+      closeTime: `Kamis, Pukul ${schedule.publicEndTime}`,
+      totalUnits: regularUnits,
     },
     {
       id: "demo",
       title: "Live Demo Unit",
       status: "BUKA",
-      openTime: "Rabu,Pukul 17:00",
-      closeTime: "Kamis, Pukul 08:00",
+      openTime: `Rabu,Pukul ${schedule.publicStartTime}`,
+      closeTime: `Kamis, Pukul ${schedule.publicEndTime}`,
+      totalUnits: demoUnits,
     },
     {
       id: "bundling",
       title: "Bidding Bundling",
       status: "BUKA",
-      openTime: "Rabu,Pukul 17:00",
-      closeTime: "Kamis, Pukul 08:00",
+      openTime: `Rabu,Pukul ${schedule.publicStartTime}`,
+      closeTime: `Kamis, Pukul ${schedule.publicEndTime}`,
+      totalUnits: bundlingUnits,
     },
   ];
 
@@ -71,10 +133,11 @@ export function SessionsScreen({
               </span>
             </div>
 
-            {/* Schedule Times */}
+            {/* Schedule Times & Total Unit */}
             <div className="text-xs text-slate-600 space-y-0.5 font-normal">
               <p>Buka : {session.openTime}</p>
               <p>Tutup : {session.closeTime}</p>
+              <p>Total Unit : {session.totalUnits}</p>
             </div>
 
             {/* Masuk CTA Button */}

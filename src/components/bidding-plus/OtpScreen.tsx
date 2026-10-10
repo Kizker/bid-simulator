@@ -6,11 +6,12 @@ import { BrandLogo } from "./BrandLogo";
 
 interface OtpScreenProps {
   phoneNumber: string;
+  userName?: string;
   onBack: () => void;
   onSuccess: () => void;
 }
 
-export function OtpScreen({ phoneNumber, onBack, onSuccess }: OtpScreenProps) {
+export function OtpScreen({ phoneNumber, userName, onBack, onSuccess }: OtpScreenProps) {
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [secondsLeft, setSecondsLeft] = useState(58);
   const inputRefs = [
@@ -90,9 +91,14 @@ export function OtpScreen({ phoneNumber, onBack, onSuccess }: OtpScreenProps) {
         {/* Brand Gavel Logo */}
         <BrandLogo variant="gavel" size="md" className="mb-6" />
 
-        <h2 className="text-lg font-bold text-black tracking-tight mb-2">
+        <h2 className="text-lg font-bold text-black tracking-tight mb-1">
           Masukkan Kode OTP
         </h2>
+        {userName && (
+          <p className="text-xs font-semibold text-[#0066D6] mb-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+            Halo, {userName} 👋
+          </p>
+        )}
         <p className="text-xs text-slate-500 leading-relaxed mb-1">
           Kami telah mengirim kode OTP untuk verifikasi nomor handphone anda
         </p>
