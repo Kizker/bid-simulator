@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSocketClient } from "@/lib/socket-client";
-import { useAdminAuth } from "./layout";
+import { useAdminAuth } from "./AdminAuthContext";
 import type { AuctionRoom, Bid, SimulationConfig, BotProfile, User } from "@/db/schema";
 import {
   Package,
@@ -44,7 +44,7 @@ import {
 
 type NavTab = "lots" | "control" | "users" | "bids" | "import";
 
-export const PERSONALITY_META: Record<
+const PERSONALITY_META: Record<
   string,
   {
     label: string;

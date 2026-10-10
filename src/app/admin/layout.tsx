@@ -1,22 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Lock, User, Eye, EyeOff, AlertCircle } from "lucide-react";
-
-export interface AdminAuthContextType {
-  adminUsername: string;
-  logout: () => void;
-}
-
-export const AdminAuthContext = createContext<AdminAuthContextType>({
-  adminUsername: "admin",
-  logout: () => {},
-});
-
-export function useAdminAuth() {
-  return useContext(AdminAuthContext);
-}
+import { AdminAuthContext } from "./AdminAuthContext";
 
 export default function AdminLayout({
   children,

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { db } from "../db";
 import { auctionRooms, simulationConfigs, bids } from "../db/schema";
-import { mapBiddingItemToRoom } from "../app/api/rooms/import-json/route";
+import { mapBiddingItemToRoom } from "../lib/biddingMapper";
 
 async function main() {
   const filePathArg = process.argv[2] || "bidding-items.json";
