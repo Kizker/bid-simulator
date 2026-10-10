@@ -17,6 +17,7 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: 3000,
+        UV_THREADPOOL_SIZE: "1",
       },
       error_file: path.resolve(__dirname, "logs/err.log"),
       out_file: path.resolve(__dirname, "logs/out.log"),
