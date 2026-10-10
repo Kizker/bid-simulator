@@ -4,7 +4,7 @@ import { Server as SocketIOServer } from "socket.io";
 import { simulationEngine } from "./src/server/engine";
 import { initSocketServer } from "./src/server/socket";
 
-const dev = process.env.NODE_ENV !== "production";
+const dev = process.env.NODE_ENV === "development";
 const hostname = "0.0.0.0";
 const port = parseInt(process.env.PORT || "3000", 10);
 
