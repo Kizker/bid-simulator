@@ -7,7 +7,6 @@ export function initSocketServer(io: SocketIOServer, engine: SimulationEngine) {
     switch (event) {
       case "timer_tick": {
         io.to(`room:${payload.roomId}`).emit("timer_tick", payload);
-        io.emit("admin_tick", payload);
         break;
       }
       case "bid_placed": {
@@ -84,15 +83,25 @@ export function initSocketServer(io: SocketIOServer, engine: SimulationEngine) {
       socket.join(`room:${roomId}`);
       const state = engine.getRoomState(roomId);
       if (state) {
+        // Auto-aktifkan room dan timer jika lelang tidak aktif atau waktu habis
+        if (state.room.status !== "ACTIVE" || state.room.timeRemaining <= 0) {
+          state.room.status = "ACTIVE";
+          if (!state.room.timeRemaining || state.room.timeRemaining <= 0) {
+            state.room.timeRemaining = state.room.totalDurationSeconds || 36000;
+          }
+          state.config.botEnabled = 1;
+          engine.startTimer(roomId);
+        }
+
         socket.emit("initial_state", {
           room: state.room,
           config: state.config,
           recentBids: state.recentBids,
         });
 
-        // Jika posisi pengguna sudah di atas saat masuk ruang, jadwalkan penawar lain setelah 6-9 detik
+        // Jika posisi pengguna sudah di atas saat masuk ruang, jadwalkan penawar lain segera (3-5 detik)
         if (state.room.highestBidderType === "USER" || state.room.highestBidderName === "Kamu") {
-          engine.scheduleCompetitorResponse(roomId, 6000, 9000);
+          engine.scheduleCompetitorResponse(roomId, 3000, 5000);
         }
       }
     });

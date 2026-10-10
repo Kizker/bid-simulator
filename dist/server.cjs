@@ -241,12 +241,21 @@ var initDatabasePromise = (async () => {
       const now = Date.now();
       await client.execute({
         sql: `INSERT OR IGNORE INTO app_settings (key, value, updated_at) VALUES
-              ('session_start_time', '17:00:00', ?),
-              ('session_end_time', '08:00:00', ?),
+              ('session_start_time', '00:00:00', ?),
+              ('session_end_time', '23:59:59', ?),
               ('session_auto_sync', '1', ?)`,
         args: [now, now, now]
       });
     }
+    await client.execute({
+      sql: `UPDATE app_settings SET value = '00:00:00' WHERE key = 'session_start_time'`
+    });
+    await client.execute({
+      sql: `UPDATE app_settings SET value = '23:59:59' WHERE key = 'session_end_time'`
+    });
+    await client.execute({
+      sql: `UPDATE auction_rooms SET status = 'ACTIVE', time_remaining = 36000, total_duration_seconds = 36000 WHERE status = 'UPCOMING' OR time_remaining <= 0`
+    });
     await client.execute(`
       CREATE TABLE IF NOT EXISTS bot_profiles (
         id TEXT PRIMARY KEY,
@@ -362,11 +371,15 @@ var SimulationEngine = class {
         },
         recentBids: roomBids
       };
-      this.rooms.set(room.id, state);
-      if (room.status === "ACTIVE") {
-        this.startTimer(room.id);
+      if (room.status !== "ENDED") {
+        state.room.status = "ACTIVE";
+        if (!state.room.timeRemaining || state.room.timeRemaining <= 0) {
+          state.room.timeRemaining = state.room.totalDurationSeconds || 36e3;
+        }
       }
+      this.rooms.set(room.id, state);
     }
+    this.startMasterTicker();
     try {
       const settings = await db.select().from(appSettings);
       for (const s of settings) {
@@ -541,15 +554,14 @@ var SimulationEngine = class {
     if (!state) return;
     if (state.timerInterval) {
       clearInterval(state.timerInterval);
+      state.timerInterval = void 0;
     }
     state.room.status = "ACTIVE";
-    if (state.config.botEnabled) {
+    if (state.config.botEnabled && !state.nextBotBidAt) {
       this.scheduleNextBotBid(roomId);
     }
-    state.timerInterval = setInterval(() => {
-      this.tick(roomId);
-    }, 1e3);
-    this.persistRoom(roomId);
+    this.startMasterTicker();
+    this.persistRoom(roomId).catch(console.error);
     this.emit("room_updated", state.room);
   }
   pauseTimer(roomId) {
@@ -561,7 +573,7 @@ var SimulationEngine = class {
     }
     state.room.status = "PAUSED";
     state.nextBotBidAt = void 0;
-    this.persistRoom(roomId);
+    this.persistRoom(roomId).catch(console.error);
     this.emit("room_updated", state.room);
   }
   resetRoom(roomId) {
@@ -571,15 +583,17 @@ var SimulationEngine = class {
       clearInterval(state.timerInterval);
       state.timerInterval = void 0;
     }
-    state.room.status = "UPCOMING";
-    state.room.timeRemaining = state.room.totalDurationSeconds;
+    state.room.status = "ACTIVE";
+    state.room.timeRemaining = state.room.totalDurationSeconds || 36e3;
     state.room.currentPrice = state.room.startingPrice;
     state.room.highestBidderName = null;
     state.room.highestBidderType = null;
     state.room.totalBids = 0;
     state.recentBids = [];
+    state.nextBotBidAt = void 0;
     db.delete(bids).where((0, import_drizzle_orm.eq)(bids.roomId, roomId)).execute().catch(console.error);
-    this.persistRoom(roomId);
+    this.startMasterTicker();
+    this.persistRoom(roomId).catch(console.error);
     this.emit("room_updated", state.room);
     this.emit("bids_cleared", { roomId });
   }
@@ -725,30 +739,37 @@ var SimulationEngine = class {
     this.emit("time_extended", { roomId, timeRemaining: state.room.timeRemaining, added: extraSeconds });
     this.emit("room_updated", state.room);
   }
-  tick(roomId) {
-    const state = this.rooms.get(roomId);
-    if (!state || state.room.status !== "ACTIVE") return;
-    if (state.room.timeRemaining > 0) {
-      state.room.timeRemaining -= 1;
-      this.emit("timer_tick", {
-        roomId,
-        timeRemaining: state.room.timeRemaining
-      });
-      if (state.config.botEnabled && state.nextBotBidAt && Date.now() >= state.nextBotBidAt && state.room.timeRemaining > 1) {
-        this.executeBotBid(roomId);
+  startMasterTicker() {
+    if (this.masterTicker) return;
+    this.masterTicker = setInterval(() => {
+      this.masterTick();
+    }, 1e3);
+  }
+  masterTick() {
+    const now = Date.now();
+    for (const [roomId, state] of this.rooms) {
+      if (state.room.status !== "ACTIVE") continue;
+      if (state.room.timeRemaining > 0) {
+        state.room.timeRemaining -= 1;
+        this.emit("timer_tick", {
+          roomId,
+          timeRemaining: state.room.timeRemaining
+        });
+        if (state.config.botEnabled && state.nextBotBidAt && now >= state.nextBotBidAt && state.room.timeRemaining > 1) {
+          this.executeBotBid(roomId).catch(console.error);
+        }
+      } else {
+        state.room.status = "ENDED";
+        state.nextBotBidAt = void 0;
+        this.persistRoom(roomId).catch(console.error);
+        this.emit("auction_ended", {
+          roomId,
+          winnerName: state.room.highestBidderName,
+          winnerType: state.room.highestBidderType,
+          finalPrice: state.room.currentPrice
+        });
+        this.emit("room_updated", state.room);
       }
-    } else {
-      clearInterval(state.timerInterval);
-      state.timerInterval = void 0;
-      state.room.status = "ENDED";
-      this.persistRoom(roomId);
-      this.emit("auction_ended", {
-        roomId,
-        winnerName: state.room.highestBidderName,
-        winnerType: state.room.highestBidderType,
-        finalPrice: state.room.currentPrice
-      });
-      this.emit("room_updated", state.room);
     }
   }
   scheduleNextBotBid(roomId, botProfile) {
@@ -833,10 +854,15 @@ var SimulationEngine = class {
     if (!state) {
       return { success: false, message: "Terjadi Kesalahan", code: "NOT_FOUND" };
     }
-    if (state.room.status !== "ACTIVE") {
-      return { success: false, message: "Terjadi Kesalahan", code: "INVALID_STATUS" };
+    if (state.room.status !== "ACTIVE" || state.room.timeRemaining <= 0) {
+      state.room.status = "ACTIVE";
+      if (!state.room.timeRemaining || state.room.timeRemaining <= 0) {
+        state.room.timeRemaining = state.room.totalDurationSeconds || 36e3;
+      }
+      state.config.botEnabled = 1;
+      this.startTimer(roomId);
     }
-    if (bidderType === "USER" && (clientPrice !== void 0 && clientPrice < state.room.currentPrice || amount <= state.room.currentPrice)) {
+    if (amount <= state.room.currentPrice) {
       return {
         success: false,
         message: "Harga tidak boleh sama atau kurang dari tawaran sebelumnya",
@@ -844,17 +870,11 @@ var SimulationEngine = class {
       };
     }
     if (bidderType === "USER" && (state.room.highestBidderType === "USER" || state.room.highestBidderName === "Kamu" || state.recentBids.length > 0 && (state.recentBids[0].bidderType === "USER" || state.recentBids[0].bidderName === "Kamu"))) {
+      this.scheduleCompetitorResponse(roomId, 1500, 3e3);
       return {
         success: false,
         message: "Harap menunggu user lain untuk menawar",
         code: "ALREADY_HIGHEST"
-      };
-    }
-    if (amount <= state.room.currentPrice) {
-      return {
-        success: false,
-        message: "Harga tidak boleh sama atau kurang dari tawaran sebelumnya",
-        code: "PRICE_TOO_LOW"
       };
     }
     const previousAmount = state.room.currentPrice;
@@ -899,19 +919,20 @@ var SimulationEngine = class {
     });
     this.emit("room_updated", state.room);
     if (bidderType === "USER") {
-      this.scheduleCompetitorResponse(roomId, 4e3, 7e3);
+      this.scheduleCompetitorResponse(roomId, 2500, 4500);
     } else if (state.config.botEnabled) {
       this.scheduleNextBotBid(roomId);
     }
     return { success: true, bid: newBid };
   }
-  scheduleCompetitorResponse(roomId, minDelay = 4e3, maxDelay = 7e3) {
+  scheduleCompetitorResponse(roomId, minDelay = 2500, maxDelay = 4500) {
     const state = this.rooms.get(roomId);
-    if (!state || state.room.status !== "ACTIVE" || !state.config.botEnabled) return;
+    if (!state || state.room.status !== "ACTIVE") return;
+    state.config.botEnabled = 1;
     const delay = Math.floor(minDelay + Math.random() * (maxDelay - minDelay));
     setTimeout(() => {
       const currentState = this.rooms.get(roomId);
-      if (currentState && currentState.room.status === "ACTIVE" && currentState.config.botEnabled && (currentState.room.highestBidderType === "USER" || currentState.room.highestBidderName === "Kamu")) {
+      if (currentState && currentState.room.status === "ACTIVE" && (currentState.room.highestBidderType === "USER" || currentState.room.highestBidderName === "Kamu")) {
         this.executeBotBid(roomId).catch(console.error);
       }
     }, delay);
@@ -961,7 +982,6 @@ function initSocketServer(io, engine) {
     switch (event) {
       case "timer_tick": {
         io.to(`room:${payload.roomId}`).emit("timer_tick", payload);
-        io.emit("admin_tick", payload);
         break;
       }
       case "bid_placed": {
@@ -1036,13 +1056,21 @@ function initSocketServer(io, engine) {
       socket.join(`room:${roomId}`);
       const state = engine.getRoomState(roomId);
       if (state) {
+        if (state.room.status !== "ACTIVE" || state.room.timeRemaining <= 0) {
+          state.room.status = "ACTIVE";
+          if (!state.room.timeRemaining || state.room.timeRemaining <= 0) {
+            state.room.timeRemaining = state.room.totalDurationSeconds || 36e3;
+          }
+          state.config.botEnabled = 1;
+          engine.startTimer(roomId);
+        }
         socket.emit("initial_state", {
           room: state.room,
           config: state.config,
           recentBids: state.recentBids
         });
         if (state.room.highestBidderType === "USER" || state.room.highestBidderName === "Kamu") {
-          engine.scheduleCompetitorResponse(roomId, 6e3, 9e3);
+          engine.scheduleCompetitorResponse(roomId, 3e3, 5e3);
         }
       }
     });
@@ -1227,38 +1255,40 @@ async function main() {
     ".ico": "image/x-icon",
     ".json": "application/json"
   };
-  const fsStatic = require("node:fs");
-  const pathStatic = require("node:path");
   const serveStaticFile = (res, filePath) => {
     try {
-      const ext = pathStatic.extname(filePath);
+      const pathModule2 = require("node:path");
+      const fsModule2 = require("node:fs");
+      const ext = pathModule2.extname(filePath);
       const contentType = mimeTypes[ext] || "application/octet-stream";
-      const stat = fsStatic.statSync(filePath);
+      const stat = fsModule2.statSync(filePath);
       res.writeHead(200, {
         "Content-Type": contentType,
         "Content-Length": stat.size,
         "Cache-Control": "public, max-age=31536000, immutable",
         "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet"
       });
-      fsStatic.createReadStream(filePath).pipe(res);
+      fsModule2.createReadStream(filePath).pipe(res);
     } catch {
       res.writeHead(404);
       res.end();
     }
   };
+  const pathModule = require("node:path");
+  const fsModule = require("node:fs");
   const httpServer = (0, import_node_http.createServer)((req, res) => {
     res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
     const rawUrl = req.url || "/";
     const cleanUrl = rawUrl.split("?")[0];
     if (cleanUrl.startsWith("/_next/static/")) {
       const relPath = cleanUrl.replace(/^\/_next\/static\//, "");
-      const filePath = pathStatic.join(projectDir, ".next/static", relPath);
-      if (fsStatic.existsSync(filePath) && fsStatic.statSync(filePath).isFile()) {
+      const filePath = pathModule.join(process.cwd(), ".next/static", relPath);
+      if (fsModule.existsSync(filePath) && fsModule.statSync(filePath).isFile()) {
         return serveStaticFile(res, filePath);
       }
     }
-    const publicPath = pathStatic.join(projectDir, "public", cleanUrl.replace(/^\//, ""));
-    if (cleanUrl !== "/" && fsStatic.existsSync(publicPath) && fsStatic.statSync(publicPath).isFile()) {
+    const publicPath = pathModule.join(process.cwd(), "public", cleanUrl.replace(/^\//, ""));
+    if (cleanUrl !== "/" && fsModule.existsSync(publicPath) && fsModule.statSync(publicPath).isFile()) {
       return serveStaticFile(res, publicPath);
     }
     handle(req, res);

@@ -968,6 +968,16 @@ export default function AdminPage() {
     };
   }, [selectedRoomId]);
 
+  // Join selected room for targeted real-time updates without flooding global socket
+  useEffect(() => {
+    if (!selectedRoomId) return;
+    const socket = getSocketClient();
+    socket.emit("join_room", selectedRoomId);
+    return () => {
+      socket.emit("leave_room", selectedRoomId);
+    };
+  }, [selectedRoomId]);
+
   const showNotice = (msg: string) => {
     setStatusMessage(msg);
     setTimeout(() => setStatusMessage(null), 3000);

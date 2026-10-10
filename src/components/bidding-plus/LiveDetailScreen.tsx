@@ -176,24 +176,7 @@ export function LiveDetailScreen({
       return;
     }
 
-    // 1. Validasi status lelang (Gagal - Terjadi Kesalahan)
-    if (timeRemaining <= 0 || room.status !== "ACTIVE") {
-      setLocalModal({
-        isOpen: true,
-        type: "error",
-        title: "Gagal",
-        message: "Terjadi Kesalahan",
-      });
-      return;
-    }
-
-    // 2. KETENTUAN USER:
     // Kirim tawaran ke server bersama room.currentPrice yang dilihat user saat ini.
-    // - Jika user masih penawar tertinggi di server -> balas ALREADY_HIGHEST ("Harap menunggu user lain untuk menawar")
-    //   dan jadwalkan penawar lain.
-    // - Jika penawar lain sudah menawar di background (data user stale) -> server membalas PRICE_TOO_LOW
-    //   ("Harga tidak boleh sama atau kurang dari tawaran sebelumnya") serta mengembalikan data room dan recentBids
-    //   terbaru untuk merefresh tampilan ke penawar paling atas!
     onPlaceBid(targetBidPrice, room.currentPrice);
   };
 

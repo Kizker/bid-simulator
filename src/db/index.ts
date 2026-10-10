@@ -137,12 +137,23 @@ export const initDatabasePromise = (async () => {
       const now = Date.now();
       await client.execute({
         sql: `INSERT OR IGNORE INTO app_settings (key, value, updated_at) VALUES
-              ('session_start_time', '17:00:00', ?),
-              ('session_end_time', '08:00:00', ?),
+              ('session_start_time', '00:00:00', ?),
+              ('session_end_time', '23:59:59', ?),
               ('session_auto_sync', '1', ?)`,
         args: [now, now, now],
       });
     }
+
+    // Pastikan sesi lelang selalu aktif 24/7 dan semua room lelang berstatus ACTIVE
+    await client.execute({
+      sql: `UPDATE app_settings SET value = '00:00:00' WHERE key = 'session_start_time'`,
+    });
+    await client.execute({
+      sql: `UPDATE app_settings SET value = '23:59:59' WHERE key = 'session_end_time'`,
+    });
+    await client.execute({
+      sql: `UPDATE auction_rooms SET status = 'ACTIVE', time_remaining = 36000, total_duration_seconds = 36000 WHERE status = 'UPCOMING' OR time_remaining <= 0`,
+    });
 
     // Initialize bot_profiles table for customizable bot users
     await client.execute(`

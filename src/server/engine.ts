@@ -75,6 +75,7 @@ export class SimulationEngine {
   private sessionEndTime: string = "08:00:00";
   private sessionAutoSync: boolean = true;
   private scheduleSyncInterval?: NodeJS.Timeout;
+  private masterTicker?: NodeJS.Timeout;
   private lastSyncLiveState: boolean | null = null;
 
   public onEvent(callback: EventListener) {
@@ -129,12 +130,19 @@ export class SimulationEngine {
         recentBids: roomBids,
       };
 
-      this.rooms.set(room.id, state);
-
-      if (room.status === "ACTIVE") {
-        this.startTimer(room.id);
+      // Pastikan status room AKTIF dengan timer berjalan untuk live simulator
+      if (room.status !== "ENDED") {
+        state.room.status = "ACTIVE";
+        if (!state.room.timeRemaining || state.room.timeRemaining <= 0) {
+          state.room.timeRemaining = state.room.totalDurationSeconds || 36000;
+        }
       }
+
+      this.rooms.set(room.id, state);
     }
+
+    // Jalankan master ticker tunggal berkinerja tinggi
+    this.startMasterTicker();
 
     // Load schedule settings from appSettings
     try {
@@ -349,18 +357,16 @@ export class SimulationEngine {
 
     if (state.timerInterval) {
       clearInterval(state.timerInterval);
+      state.timerInterval = undefined;
     }
 
     state.room.status = "ACTIVE";
-    if (state.config.botEnabled) {
+    if (state.config.botEnabled && !state.nextBotBidAt) {
       this.scheduleNextBotBid(roomId);
     }
 
-    state.timerInterval = setInterval(() => {
-      this.tick(roomId);
-    }, 1000);
-
-    this.persistRoom(roomId);
+    this.startMasterTicker();
+    this.persistRoom(roomId).catch(console.error);
     this.emit("room_updated", state.room);
   }
 
@@ -376,7 +382,7 @@ export class SimulationEngine {
     state.room.status = "PAUSED";
     state.nextBotBidAt = undefined;
 
-    this.persistRoom(roomId);
+    this.persistRoom(roomId).catch(console.error);
     this.emit("room_updated", state.room);
   }
 
@@ -389,18 +395,20 @@ export class SimulationEngine {
       state.timerInterval = undefined;
     }
 
-    state.room.status = "UPCOMING";
-    state.room.timeRemaining = state.room.totalDurationSeconds;
+    state.room.status = "ACTIVE";
+    state.room.timeRemaining = state.room.totalDurationSeconds || 36000;
     state.room.currentPrice = state.room.startingPrice;
     state.room.highestBidderName = null;
     state.room.highestBidderType = null;
     state.room.totalBids = 0;
     state.recentBids = [];
+    state.nextBotBidAt = undefined;
 
     // Delete bids from database for this room
     db.delete(bids).where(eq(bids.roomId, roomId)).execute().catch(console.error);
 
-    this.persistRoom(roomId);
+    this.startMasterTicker();
+    this.persistRoom(roomId).catch(console.error);
     this.emit("room_updated", state.room);
     this.emit("bids_cleared", { roomId });
   }
@@ -571,40 +579,48 @@ export class SimulationEngine {
     this.emit("room_updated", state.room);
   }
 
-  private tick(roomId: string) {
-    const state = this.rooms.get(roomId);
-    if (!state || state.room.status !== "ACTIVE") return;
+  public startMasterTicker() {
+    if (this.masterTicker) return;
+    this.masterTicker = setInterval(() => {
+      this.masterTick();
+    }, 1000);
+  }
 
-    if (state.room.timeRemaining > 0) {
-      state.room.timeRemaining -= 1;
-      this.emit("timer_tick", {
-        roomId,
-        timeRemaining: state.room.timeRemaining,
-      });
+  private masterTick() {
+    const now = Date.now();
+    for (const [roomId, state] of this.rooms) {
+      if (state.room.status !== "ACTIVE") continue;
 
-      // Check if it is time for a bot bid
-      if (
-        state.config.botEnabled &&
-        state.nextBotBidAt &&
-        Date.now() >= state.nextBotBidAt &&
-        state.room.timeRemaining > 1
-      ) {
-        this.executeBotBid(roomId);
+      if (state.room.timeRemaining > 0) {
+        state.room.timeRemaining -= 1;
+        this.emit("timer_tick", {
+          roomId,
+          timeRemaining: state.room.timeRemaining,
+        });
+
+        // Check if it is time for a bot bid
+        if (
+          state.config.botEnabled &&
+          state.nextBotBidAt &&
+          now >= state.nextBotBidAt &&
+          state.room.timeRemaining > 1
+        ) {
+          this.executeBotBid(roomId).catch(console.error);
+        }
+      } else {
+        // Auction ended
+        state.room.status = "ENDED";
+        state.nextBotBidAt = undefined;
+
+        this.persistRoom(roomId).catch(console.error);
+        this.emit("auction_ended", {
+          roomId,
+          winnerName: state.room.highestBidderName,
+          winnerType: state.room.highestBidderType,
+          finalPrice: state.room.currentPrice,
+        });
+        this.emit("room_updated", state.room);
       }
-    } else {
-      // Auction ended
-      clearInterval(state.timerInterval);
-      state.timerInterval = undefined;
-      state.room.status = "ENDED";
-
-      this.persistRoom(roomId);
-      this.emit("auction_ended", {
-        roomId,
-        winnerName: state.room.highestBidderName,
-        winnerType: state.room.highestBidderType,
-        finalPrice: state.room.currentPrice,
-      });
-      this.emit("room_updated", state.room);
     }
   }
 
@@ -719,18 +735,18 @@ export class SimulationEngine {
       return { success: false, message: "Terjadi Kesalahan", code: "NOT_FOUND" };
     }
 
-    if (state.room.status !== "ACTIVE") {
-      return { success: false, message: "Terjadi Kesalahan", code: "INVALID_STATUS" };
+    // Auto-aktifkan room jika nonaktif atau waktu habis agar pengguna selalu dapat menawar
+    if (state.room.status !== "ACTIVE" || state.room.timeRemaining <= 0) {
+      state.room.status = "ACTIVE";
+      if (!state.room.timeRemaining || state.room.timeRemaining <= 0) {
+        state.room.timeRemaining = state.room.totalDurationSeconds || 36000;
+      }
+      state.config.botEnabled = 1;
+      this.startTimer(roomId);
     }
 
-    // 1. Jika penawaran diajukan berdasarkan harga layar yang sudah basi (stale)
-    // karena penawar lain sudah menawar di background pada server,
-    // atau jika harga tawaran <= harga lelang server saat ini:
-    if (
-      bidderType === "USER" &&
-      ((clientPrice !== undefined && clientPrice < state.room.currentPrice) ||
-        amount <= state.room.currentPrice)
-    ) {
+    // 1. Validasi jika harga tawaran <= harga lelang server saat ini
+    if (amount <= state.room.currentPrice) {
       return {
         success: false,
         message: "Harga tidak boleh sama atau kurang dari tawaran sebelumnya",
@@ -746,19 +762,12 @@ export class SimulationEngine {
         (state.recentBids.length > 0 &&
           (state.recentBids[0].bidderType === "USER" || state.recentBids[0].bidderName === "Kamu")))
     ) {
+      // Posisi sudah di atas: jadwalkan bot lawan untuk segera menyalip (1.5s - 3s) agar pengguna bisa tawar lagi
+      this.scheduleCompetitorResponse(roomId, 1500, 3000);
       return {
         success: false,
         message: "Harap menunggu user lain untuk menawar",
         code: "ALREADY_HIGHEST",
-      };
-    }
-
-    // 3. Validasi umum jika tawaran <= harga saat ini
-    if (amount <= state.room.currentPrice) {
-      return {
-        success: false,
-        message: "Harga tidak boleh sama atau kurang dari tawaran sebelumnya",
-        code: "PRICE_TOO_LOW",
       };
     }
 
@@ -816,9 +825,9 @@ export class SimulationEngine {
 
     this.emit("room_updated", state.room);
 
-    // Jika pengguna menawar dan berada di atas, jadwalkan penawar lain (simulasi) setelah beberapa detik
+    // Jika pengguna menawar dan berada di atas, jadwalkan lawan bot merespon cepat (2.5s - 4.5s)
     if (bidderType === "USER") {
-      this.scheduleCompetitorResponse(roomId, 4000, 7000);
+      this.scheduleCompetitorResponse(roomId, 2500, 4500);
     } else if (state.config.botEnabled) {
       this.scheduleNextBotBid(roomId);
     }
@@ -826,9 +835,11 @@ export class SimulationEngine {
     return { success: true, bid: newBid };
   }
 
-  public scheduleCompetitorResponse(roomId: string, minDelay = 4000, maxDelay = 7000) {
+  public scheduleCompetitorResponse(roomId: string, minDelay = 2500, maxDelay = 4500) {
     const state = this.rooms.get(roomId);
-    if (!state || state.room.status !== "ACTIVE" || !state.config.botEnabled) return;
+    if (!state || state.room.status !== "ACTIVE") return;
+
+    state.config.botEnabled = 1;
 
     const delay = Math.floor(minDelay + Math.random() * (maxDelay - minDelay));
     setTimeout(() => {
@@ -836,7 +847,6 @@ export class SimulationEngine {
       if (
         currentState &&
         currentState.room.status === "ACTIVE" &&
-        currentState.config.botEnabled &&
         (currentState.room.highestBidderType === "USER" || currentState.room.highestBidderName === "Kamu")
       ) {
         this.executeBotBid(roomId).catch(console.error);
