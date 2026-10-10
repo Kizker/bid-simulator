@@ -6669,11 +6669,11 @@ async function main() {
     await app.prepare();
     handle = app.getRequestHandler();
   } else {
+    const path2 = require("node:path");
     const NextNodeServer = require("next/dist/server/next-server").default;
-    const loadConfig = require("next/dist/server/config").default;
-    const { PHASE_PRODUCTION_SERVER } = require("next/dist/shared/lib/constants");
     const projectDir = process.cwd();
-    const conf = await loadConfig(PHASE_PRODUCTION_SERVER, projectDir, { silent: true });
+    const serverFiles = require(path2.join(projectDir, ".next/required-server-files.json"));
+    const conf = serverFiles.config;
     const nextServer = new NextNodeServer({
       dir: projectDir,
       conf,

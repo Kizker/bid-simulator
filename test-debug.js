@@ -22,37 +22,39 @@ client.execute("SELECT 1;").then((res) => {
   const next = require("next");
   console.log("✅ STEP 6: OK");
 
-  console.log("🔍 STEP 7: loading NextNodeServer & config...");
+  console.log("🔍 STEP 7: loading compiled config from .next/required-server-files.json...");
+  const path = require("path");
+  const serverFiles = require(path.join(process.cwd(), ".next/required-server-files.json"));
+  const conf = serverFiles.config;
+  console.log("✅ STEP 7: Config loaded OK");
+
+  console.log("🔍 STEP 8: loading NextNodeServer class...");
   const NextNodeServer = require("next/dist/server/next-server").default;
-  const loadConfig = require("next/dist/server/config").default;
-  const { PHASE_PRODUCTION_SERVER } = require("next/dist/shared/lib/constants");
+  console.log("✅ STEP 8: NextNodeServer class loaded OK");
 
-  loadConfig(PHASE_PRODUCTION_SERVER, process.cwd(), { silent: true }).then(async (conf) => {
-    console.log("✅ STEP 7: Config loaded OK");
+  console.log("🔍 STEP 9: instantiating NextNodeServer...");
+  const nextServer = new NextNodeServer({
+    dir: process.cwd(),
+    conf,
+    dev: false,
+    minimalMode: false,
+    hostname: "0.0.0.0",
+    port: 3000,
+  });
+  console.log("✅ STEP 9: NextNodeServer instantiated OK");
 
-    console.log("🔍 STEP 8: instantiating NextNodeServer...");
-    const nextServer = new NextNodeServer({
-      dir: process.cwd(),
-      conf,
-      dev: false,
-      minimalMode: false,
-      hostname: "0.0.0.0",
-      port: 3000,
-    });
-    console.log("✅ STEP 8: NextNodeServer instantiated OK");
+  console.log("🔍 STEP 10: nextServer.prepare()...");
+  nextServer.prepare().then(async () => {
+    console.log("✅ STEP 10: nextServer.prepare() OK");
 
-    console.log("🔍 STEP 9: nextServer.prepare()...");
-    await nextServer.prepare();
-    console.log("✅ STEP 9: nextServer.prepare() OK");
-
-    console.log("🔍 STEP 10: getting request handler...");
+    console.log("🔍 STEP 11: getting request handler...");
     const handle = nextServer.getRequestHandler();
-    console.log("✅ STEP 10: getRequestHandler OK -> handler type:", typeof handle);
+    console.log("✅ STEP 11: getRequestHandler OK -> handler type:", typeof handle);
 
-    console.log("\n🎉 ALL 10 STEPS PASSED 100%! Ready to run in production!");
+    console.log("\n🎉 ALL 11 STEPS PASSED 100%! Ready to run in production!");
     process.exit(0);
   }).catch((err) => {
-    console.error("❌ ERROR in Next.js initialization:", err);
+    console.error("❌ ERROR in nextServer.prepare():", err);
     process.exit(1);
   });
 }).catch((err) => {

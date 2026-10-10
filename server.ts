@@ -23,14 +23,15 @@ async function main() {
     await app.prepare();
     handle = app.getRequestHandler();
   } else {
-    // Production: Direct NextNodeServer instantiation to run single-threaded
-    // Eliminates worker threads & child_process fork that trigger SIGABRT on CloudLinux/cPanel shared hosting
+    // Production: Direct NextNodeServer instantiation using pre-compiled build config
+    // Completely bypasses loadConfig, transpile-config, and @next/swc native bindings
+    // Runs 100% single-threaded with zero worker threads on CloudLinux/cPanel shared hosting
+    const path = require("node:path");
     const NextNodeServer = require("next/dist/server/next-server").default;
-    const loadConfig = require("next/dist/server/config").default;
-    const { PHASE_PRODUCTION_SERVER } = require("next/dist/shared/lib/constants");
-
     const projectDir = process.cwd();
-    const conf = await loadConfig(PHASE_PRODUCTION_SERVER, projectDir, { silent: true });
+    const serverFiles = require(path.join(projectDir, ".next/required-server-files.json"));
+    const conf = serverFiles.config;
+
     const nextServer = new NextNodeServer({
       dir: projectDir,
       conf,
