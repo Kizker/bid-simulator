@@ -24,16 +24,11 @@ if command -v docker &> /dev/null && docker compose version &> /dev/null; then
 else
     echo "⚡ [Deploy] Docker tidak terdeteksi. Menggunakan Node.js native..."
     
-    # Enable pnpm jika belum ada
-    if ! command -v pnpm &> /dev/null; then
-        npm install -g pnpm@12.6.0
-    fi
-
-    echo "📦 [Deploy] Menginstal dependencies..."
-    pnpm install --frozen-lockfile
+    echo "📦 [Deploy] Menginstal dependencies dengan npm..."
+    npm install
 
     echo "🔨 [Deploy] Melakukan build production..."
-    pnpm build
+    npm run build
 
     # Restart via PM2 jika ada, atau fallback
     if command -v pm2 &> /dev/null; then
@@ -43,7 +38,7 @@ else
     else
         echo "⚠️ [Deploy] PM2 belum terinstal. Menjalankan via nohup..."
         pkill -f "tsx server.ts" || true
-        nohup pnpm start > app.log 2>&1 &
+        nohup npm start > app.log 2>&1 &
     fi
     echo "✅ [Deploy] Aplikasi Node.js berhasil diperbarui dan berjalan!"
 fi

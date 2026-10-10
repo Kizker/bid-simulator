@@ -71,14 +71,14 @@ docker compose logs -f
 ### PILIHAN B: Menggunakan Node.js & PM2
 Jika server tidak memiliki Docker (Hostinger Cloud/Web Hosting standar):
 ```bash
-# 1. Pastikan pnpm dan pm2 terinstal
-npm install -g pnpm@12.6.0 pm2
+# 1. Pastikan pm2 terinstal (node & npm sudah ada secara default di server)
+npm install -g pm2
 
-# 2. Instal dependensi
-pnpm install --frozen-lockfile
+# 2. Instal dependensi dengan npm
+npm install
 
 # 3. Build Next.js
-pnpm build
+npm run build
 
 # 4. Jalankan aplikasi via PM2
 pm2 start ecosystem.config.cjs
@@ -125,8 +125,8 @@ cd ~/domains/simbid.labtry.my.id/public_html
 * **Untuk Pengguna PM2:**
   ```bash
   git pull origin main
-  pnpm install
-  pnpm build
+  npm install
+  npm run build
   pm2 reload bid-simulator
   ```
 

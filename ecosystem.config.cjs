@@ -2,9 +2,8 @@ module.exports = {
   apps: [
     {
       name: "bid-simulator",
-      script: "server.ts",
-      interpreter: "pnpm",
-      interpreter_args: "start",
+      script: "npm",
+      args: "run start",
       cwd: "./",
       env: {
         NODE_ENV: "production",

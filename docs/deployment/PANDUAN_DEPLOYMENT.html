@@ -318,14 +318,14 @@ docker compose logs -f</code></pre>
   <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 16px;">
     <h3 style="margin-top:0; color: #0d9488;">PILIHAN B: Menggunakan Node.js Native & PM2 (Rekomendasi Cloud / Shared)</h3>
     <p>Jika server hosting tidak memiliki Docker, gunakan Node.js v20 dan PM2:</p>
-    <pre><code># 1. Pastikan pnpm tersedia (jika belum ada)
-npm install -g pnpm@12.6.0 pm2
+    <pre><code># 1. Pastikan pm2 terpasang (node & npm sudah bawaan server)
+npm install -g pm2
 
 # 2. Instal dependensi proyek
-pnpm install --frozen-lockfile
+npm install
 
 # 3. Kompilasi production build Next.js
-pnpm build
+npm run build
 
 # 4. Jalankan aplikasi menggunakan PM2
 pm2 start ecosystem.config.cjs
@@ -376,8 +376,8 @@ docker compose up -d</code></pre>
         </td>
         <td>
           <pre style="margin:0;"><code>git pull origin main
-pnpm install
-pnpm build
+npm install
+npm run build
 pm2 reload bid-simulator</code></pre>
         </td>
       </tr>
