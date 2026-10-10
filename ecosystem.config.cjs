@@ -1,9 +1,11 @@
+const path = require("path");
+
 module.exports = {
   apps: [
     {
       name: "bid-simulator",
-      script: "./dist/server.cjs",
-      cwd: "./",
+      script: path.resolve(__dirname, "dist/server.cjs"),
+      cwd: __dirname,
       exec_mode: "fork",
       instances: 1,
       autorestart: true,
@@ -16,9 +18,9 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 3000,
       },
-      error_file: "./logs/err.log",
-      out_file: "./logs/out.log",
-      log_file: "./logs/combined.log",
+      error_file: path.resolve(__dirname, "logs/err.log"),
+      out_file: path.resolve(__dirname, "logs/out.log"),
+      log_file: path.resolve(__dirname, "logs/combined.log"),
       time: true,
     },
   ],

@@ -27,8 +27,13 @@ async function main() {
     // Completely bypasses loadConfig, transpile-config, and @next/swc native bindings
     // Runs 100% single-threaded with zero worker threads on CloudLinux/cPanel shared hosting
     const path = require("node:path");
+    const fs = require("node:fs");
     const NextNodeServer = require("next/dist/server/next-server").default;
-    const projectDir = process.cwd();
+    let projectDir = process.cwd();
+    if (!fs.existsSync(path.join(projectDir, ".next/required-server-files.json"))) {
+      projectDir = path.resolve(__dirname, "..");
+    }
+    console.log(`📂 Using project directory: ${projectDir}`);
     const serverFiles = require(path.join(projectDir, ".next/required-server-files.json"));
     const conf = serverFiles.config;
 
@@ -60,7 +65,7 @@ async function main() {
 
   initSocketServer(io, simulationEngine);
 
-  httpServer.listen(port, () => {
+  httpServer.listen(port, hostname, () => {
     console.log(`\n======================================================`);
     console.log(`⚡ BID SIMULATOR & CMS CONTROLLER READY`);
     console.log(`📱 Mobile Simulator : http://localhost:${port}/simulator`);

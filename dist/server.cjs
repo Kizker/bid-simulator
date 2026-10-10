@@ -1138,8 +1138,13 @@ async function main() {
     handle = app.getRequestHandler();
   } else {
     const path2 = require("node:path");
+    const fs2 = require("node:fs");
     const NextNodeServer = require("next/dist/server/next-server").default;
-    const projectDir = process.cwd();
+    let projectDir = process.cwd();
+    if (!fs2.existsSync(path2.join(projectDir, ".next/required-server-files.json"))) {
+      projectDir = path2.resolve(__dirname, "..");
+    }
+    console.log(`\u{1F4C2} Using project directory: ${projectDir}`);
     const serverFiles = require(path2.join(projectDir, ".next/required-server-files.json"));
     const conf = serverFiles.config;
     const nextServer = new NextNodeServer({
@@ -1165,7 +1170,7 @@ async function main() {
     path: "/api/socketio"
   });
   initSocketServer(io, simulationEngine);
-  httpServer.listen(port, () => {
+  httpServer.listen(port, hostname, () => {
     console.log(`
 ======================================================`);
     console.log(`\u26A1 BID SIMULATOR & CMS CONTROLLER READY`);
