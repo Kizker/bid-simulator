@@ -61,7 +61,7 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
       {/* Top Brand Logo & Title */}
       <div className="flex flex-col items-center pt-8">
         <BrandLogo variant="megaphone" size="lg" className="mb-6" />
-        <h2 className="text-xl font-bold text-black tracking-tight">Masuk</h2>
+        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Masuk</h1>
       </div>
 
       {/* Main Form Fields */}
@@ -79,9 +79,10 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
               <button
                 type="button"
                 onClick={onGoToRegister}
-                className="self-start mt-1 px-3 py-1.5 rounded-lg bg-[#0066D6] hover:bg-[#0055B8] text-white font-bold text-[11px] flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+                aria-label="Buka formulir pendaftaran akun baru"
+                className="self-start mt-1 px-3 py-1.5 rounded-lg bg-[#0055B8] hover:bg-[#004494] text-white font-bold text-[11px] flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
               >
-                <span>Daftar Akun Baru Sekarang</span>
+                <span>Daftar Aku Baru Sekarang</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
@@ -117,20 +118,20 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
                 if (errorMessage) setErrorMessage(null);
               }}
               placeholder="81373827173"
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-[#0066D6] focus:ring-1 focus:ring-[#0066D6] transition shadow-xs"
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-[#0055B8] focus:ring-1 focus:ring-[#0055B8] transition shadow-xs"
             />
           </div>
 
           {/* Quick Demo Helper Hint */}
           <div className="mt-1.5 flex items-center justify-between text-[11px]">
-            <span className="text-slate-500 font-medium">Belum terdaftar tidak bisa masuk</span>
+            <span className="text-slate-600 font-medium">Belum terdaftar tidak bisa masuk</span>
             <button
               type="button"
               onClick={() => {
                 setPhoneNumber("81373827173");
                 if (errorMessage) setErrorMessage(null);
               }}
-              className="text-[#0066D6] font-semibold hover:underline cursor-pointer"
+              className="text-[#0055B8] font-bold hover:underline cursor-pointer"
               aria-label="Isi otomatis dengan Akun Demo"
             >
               Gunakan Akun Demo
@@ -142,6 +143,7 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
         <div
           role="checkbox"
           aria-checked={agreed}
+          aria-required="true"
           tabIndex={0}
           aria-label="Setujui Syarat dan Ketentuan Bidding Plus serta Kebijakan Privasi PT ENB Mobile Care"
           onKeyDown={(e) => {
@@ -151,26 +153,26 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
             }
           }}
           onClick={() => setAgreed(!agreed)}
-          className="p-3.5 rounded-2xl bg-[#EDF5FD] border border-[#DCEBFC] flex items-start gap-3 cursor-pointer hover:bg-[#E4F0FC] focus:outline-none focus:ring-2 focus:ring-[#0066D6] transition"
+          className="p-3.5 rounded-2xl bg-[#EDF5FD] border border-[#DCEBFC] flex items-start gap-3 cursor-pointer hover:bg-[#E4F0FC] focus:outline-none focus:ring-2 focus:ring-[#0055B8] transition"
         >
           {/* Custom Radio Button */}
           <div className="mt-0.5 shrink-0" aria-hidden="true">
             <div
               className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition ${
-                agreed ? "border-[#0066D6] bg-white" : "border-slate-400 bg-white"
+                agreed ? "border-[#0055B8] bg-white" : "border-slate-500 bg-white"
               }`}
             >
-              {agreed && <div className="w-2 h-2 rounded-full bg-[#0066D6]" />}
+              {agreed && <div className="w-2 h-2 rounded-full bg-[#0055B8]" />}
             </div>
           </div>
 
-          <p className="text-[11px] leading-relaxed text-slate-700">
+          <p className="text-[11px] leading-relaxed text-slate-800">
             Dengan masuk ke aplikasi Bidding Plus, saya menyatakan telah membaca dan menyetujui{" "}
-            <span className="text-[#0066D6] font-semibold hover:underline">
+            <span className="text-[#0055B8] font-bold hover:underline">
               Syarat dan Ketentuan Bidding Plus
             </span>{" "}
             serta{" "}
-            <span className="text-[#0066D6] font-semibold hover:underline">
+            <span className="text-[#0055B8] font-bold hover:underline">
               Kebijakan Privasi PT ENB Mobile Care
             </span>
           </p>
@@ -181,10 +183,11 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
           <button
             type="submit"
             disabled={!isFormValid}
+            aria-label="Masuk ke aplikasi Bidding Plus"
             className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${
               isFormValid
-                ? "bg-[#0066D6] hover:bg-[#0055B8] text-white active:scale-[0.99] cursor-pointer"
-                : "bg-slate-300 text-slate-500 cursor-not-allowed"
+                ? "bg-[#0055B8] hover:bg-[#004494] text-white active:scale-[0.99] cursor-pointer"
+                : "bg-slate-300 text-slate-600 cursor-not-allowed"
             }`}
           >
             {isLoading && <Loader2 className="w-4 h-4 animate-spin text-white" aria-hidden="true" />}
@@ -194,12 +197,13 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
       </form>
 
       {/* Footer Register Link */}
-      <div className="text-center pb-4 text-xs text-slate-700">
+      <div className="text-center pb-4 text-xs text-slate-800">
         <span>Belum Punya Akun ? </span>
         <button
           type="button"
           onClick={onGoToRegister}
-          className="text-[#0066D6] font-bold hover:underline cursor-pointer"
+          aria-label="Buka halaman pendaftaran akun baru"
+          className="text-[#0055B8] font-bold hover:underline cursor-pointer"
         >
           Daftar Sekarang
         </button>

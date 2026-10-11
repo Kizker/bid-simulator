@@ -443,12 +443,12 @@ function MainAppContent() {
     setCurrentScreen("home");
   };
 
-  // Wait until localStorage check is complete to avoid screen flicker
-  if (!isAuthLoaded || (currentScreen === "detail" && !selectedLot && rooms.length === 0)) {
+  // Hanya tampilkan loading jika sedang membuka detail room tetapi data rooms belum selesai diambil
+  if (currentScreen === "detail" && !selectedLot && rooms.length === 0) {
     return (
       <MobileFrame>
-        <div className="flex-1 flex flex-col items-center justify-center bg-white text-slate-400 text-xs font-mono">
-          <div className="w-8 h-8 rounded-full border-2 border-[#0066D6] border-t-transparent animate-spin mb-3" />
+        <div className="flex-1 flex flex-col items-center justify-center bg-white text-slate-500 text-xs font-mono">
+          <div className="w-8 h-8 rounded-full border-2 border-[#0055B8] border-t-transparent animate-spin mb-3" />
           <span>Memuat Bidding Plus...</span>
         </div>
       </MobileFrame>
@@ -566,9 +566,9 @@ export default function HomePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center text-slate-500 text-xs font-mono">
-          Memuat Bidding Plus...
-        </div>
+        <MobileFrame>
+          <div className="flex-1 flex flex-col justify-between p-6 bg-white" />
+        </MobileFrame>
       }
     >
       <MainAppContent />
