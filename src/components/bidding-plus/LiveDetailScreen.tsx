@@ -190,23 +190,25 @@ export function LiveDetailScreen({
   return (
     <div className="flex-1 flex flex-col bg-white text-slate-800 select-none overflow-hidden justify-between relative">
       {/* Top Header (1:1 with Screenshot) */}
-      <div className="bg-[#0066D6] px-4 py-3 flex items-center justify-between text-white shadow-xs shrink-0 z-10">
+      <div className="bg-[#0055B8] px-4 py-3 flex items-center justify-between text-white shadow-xs shrink-0 z-10">
         <button
           onClick={onBack}
+          aria-label="Kembali ke halaman sebelumnya"
           className="p-1 -ml-1 text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
         >
-          <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
+          <ChevronLeft className="w-6 h-6 stroke-[2.5]" aria-hidden="true" />
         </button>
 
-        <h2 className="text-base font-bold tracking-tight text-white flex-1 text-center">
+        <h1 className="text-base font-bold tracking-tight text-white flex-1 text-center">
           Bidding Reguler
-        </h2>
+        </h1>
 
         {/* Download / Tray Icon on Top Right */}
         <button
           type="button"
           onClick={() => alert("Mengunduh katalog unit lelang...")}
           className="p-1 -mr-1 text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
+          aria-label="Unduh Brosur Katalog Unit Lelang"
           title="Unduh Brosur"
         >
           <svg
@@ -216,6 +218,7 @@ export function LiveDetailScreen({
             strokeWidth="2.3"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
           >
             <path d="M4 17V19C4 19.5523 4.44772 20 5 20H19C19.5523 20 20 19.5523 20 19V17" />
             <path d="M12 4V14M12 14L8 10M12 14L16 10" />
@@ -227,7 +230,7 @@ export function LiveDetailScreen({
       {isCurrentlyBanned && (
         <div className="bg-gradient-to-r from-red-600 to-rose-600 text-white px-4 py-2.5 text-xs font-semibold flex items-center justify-between shadow-md shrink-0 z-30 animate-in slide-in-from-top duration-200">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse shrink-0" />
+            <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse shrink-0" aria-hidden="true" />
             <span className="leading-tight">
               Terkena Penalti 1 Menit: Tunggu <strong>{banSecondsRemaining} detik</strong>
             </span>
@@ -244,7 +247,12 @@ export function LiveDetailScreen({
         <div className="w-full h-44 flex items-center justify-center bg-white p-2">
           <img
             src={room.imageUrl}
-            alt={room.title}
+            alt={room.title || "Foto Unit Smartphone Lelang"}
+            width="320"
+            height="176"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
             className="h-full object-contain drop-shadow-sm"
           />
         </div>
@@ -253,34 +261,36 @@ export function LiveDetailScreen({
         <div className="flex items-start justify-between gap-3 pt-1">
           {/* Left: Starting Price & Stock */}
           <div className="space-y-1">
-            <p className="text-xs font-semibold text-[#0284C7] leading-tight">
+            <p className="text-xs font-bold text-[#0369A1] leading-tight">
               Harga Mulai : {formatIDR(room.startingPrice)}
             </p>
-            <p className="text-xs text-slate-800 font-normal">
+            <p className="text-xs text-slate-900 font-medium">
               Stok : {room.stock || 1}
             </p>
           </div>
 
           {/* Right: Badges (AE) FAIR & (Terdaftar) */}
           <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold text-[#0284C7] border border-[#0284C7] bg-white leading-tight">
+            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold text-[#0369A1] border border-[#0369A1] bg-white leading-tight">
               {room.lotBadge || "(AE) FAIR"}
             </span>
-            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold text-[#0284C7] border border-[#0284C7] bg-white leading-tight">
+            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold text-[#0369A1] border border-[#0369A1] bg-white leading-tight">
               (Terdaftar)
             </span>
           </div>
         </div>
 
-        {/* Tabs: Deskripsi vs Spesifikasi (Outlined in Blue & Green) */}
+        {/* Tabs: Deskripsi vs Spesifikasi (Outlined in Blue & Green with High Contrast) */}
         <div className="grid grid-cols-2 gap-3 pt-1">
           <button
             type="button"
             onClick={() => setActiveTab(activeTab === "deskripsi" ? null : "deskripsi")}
-            className={`py-2 rounded-lg text-xs font-semibold border transition text-center cursor-pointer ${
+            aria-expanded={activeTab === "deskripsi"}
+            aria-label="Tampilkan deskripsi lot"
+            className={`py-2 rounded-lg text-xs font-bold border transition text-center cursor-pointer ${
               activeTab === "deskripsi"
-                ? "border-[#0066D6] text-[#0066D6] bg-blue-50/20 shadow-2xs"
-                : "border-[#0066D6] text-[#0066D6] bg-white hover:bg-blue-50/10"
+                ? "border-[#0055B8] text-[#0055B8] bg-blue-50/30 shadow-2xs"
+                : "border-[#0055B8] text-[#0055B8] bg-white hover:bg-blue-50/10"
             }`}
           >
             Deskripsi
@@ -289,10 +299,12 @@ export function LiveDetailScreen({
           <button
             type="button"
             onClick={() => setActiveTab(activeTab === "spesifikasi" ? null : "spesifikasi")}
-            className={`py-2 rounded-lg text-xs font-semibold border transition text-center cursor-pointer ${
+            aria-expanded={activeTab === "spesifikasi"}
+            aria-label="Tampilkan spesifikasi lot"
+            className={`py-2 rounded-lg text-xs font-bold border transition text-center cursor-pointer ${
               activeTab === "spesifikasi"
-                ? "border-[#22C55E] text-[#22C55E] bg-emerald-50/20 shadow-2xs"
-                : "border-[#22C55E] text-[#22C55E] bg-white hover:bg-emerald-50/10"
+                ? "border-[#15803D] text-[#15803D] bg-emerald-50/30 shadow-2xs"
+                : "border-[#15803D] text-[#15803D] bg-white hover:bg-emerald-50/10"
             }`}
           >
             Spesifikasi
@@ -301,7 +313,7 @@ export function LiveDetailScreen({
 
         {/* Tab Detail Preview (Expandable if tapped) */}
         {activeTab && (
-          <div className="text-xs text-slate-600 leading-relaxed bg-slate-50/80 p-3 rounded-xl border border-slate-100 animate-in fade-in duration-150">
+          <div className="text-xs text-slate-700 leading-relaxed bg-slate-50/90 p-3 rounded-xl border border-slate-200 animate-in fade-in duration-150">
             {activeTab === "deskripsi" ? (
               <p>{room.description || "Unit lelang kondisi fisik mulus, fungsi tested normal 100%, siap pakai harian."}</p>
             ) : (
@@ -313,10 +325,10 @@ export function LiveDetailScreen({
         {/* Section: Penawaran & Countdown Timer */}
         <div className="pt-1 space-y-2.5">
           <div className="flex items-center justify-between pb-1">
-            <h3 className="font-bold text-sm text-slate-900">Penawaran</h3>
+            <h2 className="font-bold text-sm text-slate-900">Penawaran</h2>
 
-            <div className="flex items-center gap-1.5 text-xs text-slate-400">
-              <Clock className="w-4 h-4 text-slate-400 stroke-[1.8]" />
+            <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+              <Clock className="w-4 h-4 text-slate-600 stroke-[2]" aria-hidden="true" />
               <span>{formatTimer(timeRemaining)}</span>
             </div>
           </div>
@@ -324,7 +336,7 @@ export function LiveDetailScreen({
           {/* Live Stream Bids Rows (1:1 with Screenshot) */}
           <div className="space-y-1 pb-2">
             {bids.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-400">
+              <div className="py-6 text-center text-xs text-slate-600">
                 Belum ada penawaran. Jadilah penawar pertama!
               </div>
             ) : (
@@ -338,8 +350,8 @@ export function LiveDetailScreen({
                     <span
                       className={
                         isKamu
-                          ? "font-bold text-[16px] text-[#0066D6] tracking-tight"
-                          : "font-normal text-[14px] text-slate-800"
+                          ? "font-bold text-[16px] text-[#0055B8] tracking-tight"
+                          : "font-normal text-[14px] text-slate-900"
                       }
                     >
                       {isKamu ? "Kamu" : b.bidderName}
@@ -347,8 +359,8 @@ export function LiveDetailScreen({
                     <span
                       className={
                         isKamu
-                          ? "font-bold text-[16px] text-[#0066D6] tracking-tight"
-                          : "font-normal text-[14px] text-slate-800"
+                          ? "font-bold text-[16px] text-[#0055B8] tracking-tight"
+                          : "font-normal text-[14px] text-slate-900"
                       }
                     >
                       {formatIDR(b.amount)}
@@ -368,7 +380,7 @@ export function LiveDetailScreen({
           <p className="text-base font-bold text-slate-900 leading-tight">
             {formatIDR(targetBidPrice)}
           </p>
-          <p className="text-xs font-semibold text-[#0284C7] mt-0.5">
+          <p className="text-xs font-bold text-[#0369A1] mt-0.5">
             Selisih {formatIDR(selisihTotal)}
           </p>
         </div>
@@ -380,7 +392,8 @@ export function LiveDetailScreen({
             type="button"
             onClick={handleDecrement}
             disabled={isCurrentlyBanned || stepCount <= 1}
-            className="w-10 h-10 rounded-lg border border-[#0284C7] flex items-center justify-center text-slate-800 disabled:border-slate-300 disabled:text-slate-300 hover:bg-sky-50 transition active:scale-95 cursor-pointer shrink-0 font-bold text-xl select-none"
+            aria-label="Kurangi kelipatan penawaran harga"
+            className="w-10 h-10 rounded-lg border border-[#0369A1] flex items-center justify-center text-slate-900 disabled:border-slate-300 disabled:text-slate-400 hover:bg-sky-50 transition active:scale-95 cursor-pointer shrink-0 font-bold text-xl select-none"
           >
             -
           </button>
@@ -395,6 +408,11 @@ export function LiveDetailScreen({
               value={stepCount}
               disabled={isCurrentlyBanned}
               onChange={handleSliderChange}
+              aria-label="Pilih kenaikan harga penawaran"
+              aria-valuemin={1}
+              aria-valuemax={maxSteps}
+              aria-valuenow={stepCount}
+              aria-valuetext={`Selisih ${formatIDR(selisihTotal)}`}
               className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#5B4DB2] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
@@ -404,7 +422,8 @@ export function LiveDetailScreen({
             type="button"
             onClick={handleIncrement}
             disabled={isCurrentlyBanned || stepCount >= maxSteps}
-            className="w-10 h-10 rounded-lg border border-[#0284C7] flex items-center justify-center text-slate-800 disabled:border-slate-300 disabled:text-slate-300 hover:bg-sky-50 transition active:scale-95 cursor-pointer shrink-0 font-bold text-xl select-none"
+            aria-label="Tambah kelipatan penawaran harga"
+            className="w-10 h-10 rounded-lg border border-[#0369A1] flex items-center justify-center text-slate-900 disabled:border-slate-300 disabled:text-slate-400 hover:bg-sky-50 transition active:scale-95 cursor-pointer shrink-0 font-bold text-xl select-none"
           >
             +
           </button>
@@ -415,10 +434,11 @@ export function LiveDetailScreen({
           type="button"
           onClick={handleTawar}
           disabled={isSubmitting || isCurrentlyBanned}
-          className={`w-full py-3.5 rounded-xl font-medium text-sm transition cursor-pointer text-center mt-1 ${
+          aria-label="Kirim penawaran harga lelang sekarang"
+          className={`w-full py-3.5 rounded-xl font-bold text-sm transition cursor-pointer text-center mt-1 ${
             isCurrentlyBanned
-              ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none"
-              : "bg-[#0066D6] hover:bg-[#0055B8] active:scale-[0.99] text-white shadow-md shadow-blue-500/20"
+              ? "bg-slate-300 text-slate-600 cursor-not-allowed shadow-none"
+              : "bg-[#0055B8] hover:bg-[#004494] active:scale-[0.99] text-white shadow-md shadow-blue-500/20"
           }`}
         >
           {isCurrentlyBanned

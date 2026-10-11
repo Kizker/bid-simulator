@@ -34,17 +34,17 @@ export function BidResponseModal({
       : "Terjadi Kesalahan";
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-2xs animate-in fade-in duration-150">
+    <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-2xs animate-in fade-in duration-150" role="dialog" aria-modal="true" aria-labelledby="bid-modal-title">
       {/* Modal Card (1:1 with Screenshots 1, 2, 3) */}
       <div className="w-full max-w-[310px] bg-white rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-150">
         {/* 1. Icon */}
         {type === "success" ? (
           // Blue Standalone Checkmark from Screenshot 3
-          <div className="w-14 h-14 flex items-center justify-center mb-2">
+          <div className="w-14 h-14 flex items-center justify-center mb-2" aria-hidden="true">
             <svg
               viewBox="0 0 24 24"
               fill="none"
-              className="w-11 h-11 stroke-[#0066D6]"
+              className="w-11 h-11 stroke-[#0055B8]"
               strokeWidth="3.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -54,13 +54,13 @@ export function BidResponseModal({
           </div>
         ) : (
           // Red Circle with White Exclamation from Screenshot 1 & 2
-          <div className="w-14 h-14 rounded-full bg-[#FF3B30] flex items-center justify-center text-white mb-2 shadow-xs">
+          <div className="w-14 h-14 rounded-full bg-[#E11D48] flex items-center justify-center text-white mb-2 shadow-xs" aria-hidden="true">
             <span className="font-bold text-2xl font-sans leading-none -mt-0.5">!</span>
           </div>
         )}
 
         {/* 2. Title */}
-        <h3 className="font-bold text-base text-slate-900 mb-2">
+        <h3 id="bid-modal-title" className="font-bold text-base text-slate-900 mb-2">
           {title || defaultTitle}
         </h3>
 
@@ -75,7 +75,8 @@ export function BidResponseModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-[#0066D6] hover:bg-[#0055B8] active:scale-[0.98] text-white font-medium text-xs transition cursor-pointer shadow-xs"
+            aria-label="Tutup notifikasi penawaran"
+            className="w-full py-2.5 rounded-xl bg-[#0055B8] hover:bg-[#004494] active:scale-[0.98] text-white font-bold text-xs transition cursor-pointer shadow-xs"
           >
             Tutup
           </button>
@@ -84,7 +85,8 @@ export function BidResponseModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-white hover:bg-red-50/50 active:scale-[0.98] border border-[#FF3B30] text-[#FF3B30] font-medium text-xs transition cursor-pointer"
+            aria-label="Tutup notifikasi penawaran"
+            className="w-full py-2.5 rounded-xl bg-white hover:bg-rose-50/50 active:scale-[0.98] border border-[#E11D48] text-[#E11D48] font-bold text-xs transition cursor-pointer"
           >
             Tutup
           </button>

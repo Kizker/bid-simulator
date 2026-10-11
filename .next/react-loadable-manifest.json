@@ -2,7 +2,7 @@
   "app/page.tsx -> @/components/bidding-plus/CatalogScreen": {
     "id": 600,
     "files": [
-      "static/chunks/600.6cdd1d577112ca87.js"
+      "static/chunks/600.44883737b6ad150d.js"
     ]
   },
   "app/page.tsx -> @/components/bidding-plus/HomeScreen": {
@@ -14,7 +14,7 @@
   "app/page.tsx -> @/components/bidding-plus/LiveDetailScreen": {
     "id": 6760,
     "files": [
-      "static/chunks/760.72419cc23a3a69d4.js"
+      "static/chunks/760.07fc50d04fd3d5b3.js"
     ]
   },
   "app/page.tsx -> @/components/bidding-plus/RegisterScreen": {
@@ -26,7 +26,7 @@
   "app/page.tsx -> @/components/bidding-plus/SessionsScreen": {
     "id": 9008,
     "files": [
-      "static/chunks/8.a9f87f58d749d616.js"
+      "static/chunks/8.b078014597f429aa.js"
     ]
   },
   "app/page.tsx -> @/components/simulator/WinningModal": {

@@ -143,24 +143,26 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-slate-800 select-none overflow-hidden relative">
       {/* 1. Solid Blue Header (1:1 with Screenshot) */}
-      <div className="bg-[#0066D6] px-4 py-3.5 flex items-center justify-between text-white shadow-xs shrink-0 z-10">
+      <div className="bg-[#0055B8] px-4 py-3.5 flex items-center justify-between text-white shadow-xs shrink-0 z-10">
         <button
           onClick={onBack}
+          aria-label="Kembali ke halaman sebelumnya"
           className="p-1 -ml-1 text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
         >
-          <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
+          <ChevronLeft className="w-6 h-6 stroke-[2.5]" aria-hidden="true" />
         </button>
 
-        <h2 className="text-base font-bold tracking-tight text-white flex-1 text-center">
+        <h1 className="text-base font-bold tracking-tight text-white flex-1 text-center">
           Bidding Reguler
-        </h2>
+        </h1>
 
         <button
           onClick={() => setIsInfoOpen(true)}
           className="p-1 -mr-1 text-white hover:bg-white/10 rounded-full transition cursor-pointer"
+          aria-label="Informasi panduan Bidding Reguler"
           title="Informasi Bidding Reguler"
         >
-          <Info className="w-5 h-5" />
+          <Info className="w-5 h-5" aria-hidden="true" />
         </button>
       </div>
 
@@ -172,17 +174,19 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari Produk"
-            className="w-full pl-3.5 pr-4 py-2 rounded-lg border border-slate-300 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-[#0066D6]"
+            aria-label="Cari Produk Lelang"
+            className="w-full pl-3.5 pr-4 py-2 rounded-lg border border-slate-300 text-xs text-slate-800 placeholder:text-slate-500 outline-none focus:border-[#0055B8]"
           />
         </div>
 
         <button
           type="button"
           onClick={handleOpenFilter}
+          aria-label="Buka opsi filter dan pengurutan produk"
           className="p-2 rounded-lg text-slate-700 hover:bg-slate-100 transition cursor-pointer"
           title="Filter & Urutkan"
         >
-          <Menu className="w-5 h-5 stroke-[2.2]" />
+          <Menu className="w-5 h-5 stroke-[2.2]" aria-hidden="true" />
         </button>
       </div>
 
@@ -192,7 +196,7 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
           <div
             key={lot.id}
             onClick={() => onSelectLot(lot)}
-            className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:border-[#0066D6] hover:shadow-xs transition-all active:scale-[0.99] cursor-pointer flex flex-col gap-3"
+            className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:border-[#0055B8] hover:shadow-xs transition-all active:scale-[0.99] cursor-pointer flex flex-col gap-3"
           >
             {/* Top Row: Thumbnail + Product Info */}
             <div className="flex items-start gap-4">
@@ -200,32 +204,36 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
               <div className="w-16 h-24 bg-white flex items-center justify-center shrink-0 overflow-hidden">
                 <img
                   src={lot.imageUrl}
-                  alt={lot.title}
+                  alt={lot.title || "Foto Unit Smartphone"}
+                  width="64"
+                  height="96"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-contain"
                 />
               </div>
 
               {/* Info Column */}
               <div className="flex-1 min-w-0 space-y-1">
-                <h3 className="text-xs font-bold text-slate-900 leading-tight">
+                <h2 className="text-xs font-bold text-slate-900 leading-tight">
                   {lot.title}
-                </h3>
+                </h2>
                 <p className="text-xs text-slate-700 font-medium">
                   {lot.subtitle || "SoftCase Red"}
                 </p>
 
                 {/* Badge Pills Row (1:1 Screenshot: AD & Terdaftar) */}
                 <div className="pt-0.5 flex items-center gap-1.5 flex-wrap">
-                  <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold text-[#0066D6] border border-[#0066D6] bg-blue-50/40">
+                  <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold text-[#0055B8] border border-[#0055B8] bg-blue-50/50">
                     {lot.lotBadge || "AD"}
                   </span>
-                  <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-medium text-[#E11D48] border border-[#E11D48]/80 bg-rose-50/40">
+                  <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold text-[#BE123C] border border-[#BE123C] bg-rose-50/50">
                     (Terdaftar)
                   </span>
                 </div>
 
-                <div className="pt-0.5 flex flex-col text-[11px] text-slate-600">
-                  <span className="text-[#16A34A] font-semibold">
+                <div className="pt-0.5 flex flex-col text-[11px] text-slate-700">
+                  <span className="text-[#15803D] font-bold">
                     {lot.condition || "Fullset"}
                   </span>
                   <span>Stok : {lot.stock || 1}</span>
