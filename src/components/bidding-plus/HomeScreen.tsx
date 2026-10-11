@@ -605,7 +605,13 @@ export function HomeScreen({ user, onSelectCategory, onLogout }: HomeScreenProps
       {/* ========================================================== */}
       {/* 5. BOTTOM NAVIGATION BAR (MATCHING SCREENSHOT 1, 2, 3, 4) */}
       {/* ========================================================== */}
-      <nav aria-label="Navigasi Menu Utama" className="border-t border-slate-100 bg-white px-6 py-1 flex items-center justify-between shadow-lg shrink-0 z-20">
+      <nav
+        aria-label="Navigasi Menu Utama"
+        className="border-t border-slate-100 bg-white px-6 py-1 flex items-center justify-between shadow-lg shrink-0 z-20"
+        style={{
+          paddingBottom: "max(4px, env(safe-area-inset-bottom, 4px))",
+        }}
+      >
         {/* Tab 1: Beranda */}
         <button
           type="button"

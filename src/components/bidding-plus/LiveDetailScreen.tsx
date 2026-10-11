@@ -222,7 +222,7 @@ export function LiveDetailScreen({
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-white text-slate-800 select-none overflow-hidden justify-between relative">
+    <div className="flex-1 w-full min-h-0 h-full flex flex-col bg-white text-slate-800 select-none overflow-hidden relative">
       {/* Top Header (1:1 with Screenshot) */}
       <header className="bg-[#0055B8] px-4 py-2.5 flex items-center justify-between text-white shadow-xs shrink-0 z-10">
         <button
@@ -277,9 +277,9 @@ export function LiveDetailScreen({
       )}
 
       {/* Main Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
+      <div className="flex-1 min-h-0 w-full overflow-y-auto overscroll-contain px-5 py-2.5 space-y-3.5">
         {/* Product Image Showcase */}
-        <div className="w-full h-44 flex items-center justify-center bg-white p-2">
+        <div className="w-full h-36 sm:h-44 flex items-center justify-center bg-white p-1 shrink-0">
           <img
             src={getOptimizedImageUrl(room.imageUrl)}
             alt={`${room.title || "Smartphone"} - Unit Lelang Bidding Reguler`}
@@ -288,7 +288,7 @@ export function LiveDetailScreen({
             loading="eager"
             fetchPriority="high"
             decoding="async"
-            className="h-full object-contain drop-shadow-sm"
+            className="h-full max-h-36 sm:max-h-44 object-contain drop-shadow-sm"
           />
         </div>
 
@@ -419,9 +419,14 @@ export function LiveDetailScreen({
       </div>
 
       {/* Bottom Sticky Bidding Control Panel (1:1 with Screenshot) */}
-      <div className="border-t border-slate-200/90 bg-white p-4 pt-3 flex flex-col items-center gap-2 shadow-xl shrink-0 z-20">
+      <div
+        className="border-t border-slate-200/90 bg-white px-4 pt-2.5 flex flex-col items-center gap-1.5 shadow-xl shrink-0 z-20"
+        style={{
+          paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
+        }}
+      >
         {/* Main Target Price & Selisih Display */}
-        <div className="text-center">
+        <div className="text-center py-0.5">
           <p className="text-base font-bold text-slate-900 leading-tight">
             {formatIDR(targetBidPrice)}
           </p>
@@ -431,7 +436,7 @@ export function LiveDetailScreen({
         </div>
 
         {/* Step Slider with [-] and [+] Buttons */}
-        <div className="w-full flex items-center gap-3 px-1 py-1">
+        <div className="w-full flex items-center gap-2.5 px-0.5 py-0.5">
           {/* Minus Button */}
           <button
             type="button"
@@ -483,7 +488,7 @@ export function LiveDetailScreen({
           type="button"
           onClick={handleTawar}
           disabled={isSubmitting || isCurrentlyBanned}
-          className={`w-full min-h-[48px] py-3.5 rounded-xl font-bold text-sm transition cursor-pointer text-center mt-1 flex items-center justify-center ${
+          className={`w-full min-h-[46px] py-3 rounded-xl font-bold text-sm transition cursor-pointer text-center flex items-center justify-center ${
             isCurrentlyBanned
               ? "bg-slate-300 text-slate-600 cursor-not-allowed shadow-none"
               : "bg-[#0055B8] hover:bg-[#004494] active:scale-[0.99] text-white shadow-md shadow-blue-500/20"
