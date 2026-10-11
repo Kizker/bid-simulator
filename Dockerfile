@@ -12,8 +12,8 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@12.6.0 --activate
 
 # Install dependencies based on preferred package manager
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
+RUN pnpm install --frozen-lockfile --dangerously-allow-all-builds
 
 # ----------------- Stage 2: Builder -----------------
 FROM node:20-alpine AS builder
