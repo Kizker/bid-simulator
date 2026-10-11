@@ -64,4 +64,4 @@ USER nextjs
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+CMD ["node", "dist/server.cjs"]
