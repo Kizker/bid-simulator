@@ -82,13 +82,6 @@ server {
     # Anti-indexing headers
     add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet" always;
 
-    # Static assets Next.js (CSS, JS, Fonts)
-    location /_next/static/ {
-        alias /var/www/fastuser/data/www/bidsim.labtry.my.id/.next/static/;
-        expires 365d;
-        access_log off;
-    }
-
     location / {
         proxy_pass http://127.0.0.1:3030;
         proxy_http_version 1.1;
