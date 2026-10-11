@@ -6,12 +6,16 @@ const jakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  preload: true,
 });
 
 const monoFont = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
   weight: ["500", "700"],
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {

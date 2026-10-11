@@ -21,7 +21,7 @@
       "js"
     ],
     "instrumentationClientInject": [],
-    "poweredByHeader": true,
+    "poweredByHeader": false,
     "compress": true,
     "images": {
       "deviceSizes": [
@@ -85,7 +85,7 @@
     "productionBrowserSourceMaps": false,
     "excludeDefaultMomentLocales": true,
     "reactProductionProfiling": false,
-    "reactStrictMode": null,
+    "reactStrictMode": true,
     "reactMaxHeadersLength": 6000,
     "httpAgentOptions": {
       "keepAlive": true
@@ -232,7 +232,6 @@
       "turbopackFileSystemCacheForBuild": true,
       "turbopackInferModuleSideEffects": true,
       "turbopackPluginRuntimeStrategy": "childProcesses",
-      "turbopackMemoryEvictionMode": "auto",
       "optimizePackageImports": [
         "lucide-react",
         "date-fns",
@@ -310,6 +309,7 @@
         "react-icons/vsc",
         "react-icons/wi"
       ],
+      "turbopackMemoryEvictionMode": "auto",
       "useCacheTimeout": 54,
       "instantInsights": {
         "validationLevel": "warning"

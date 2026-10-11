@@ -90,12 +90,12 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
 
         {/* Phone Input Row */}
         <div>
-          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+          <label htmlFor="phone-number-input" className="block text-[11px] font-bold text-slate-800 mb-1">
             Nomor Handphone
           </label>
           <div className="flex items-center gap-2">
             {/* Country Code Pill */}
-            <div className="flex items-center gap-1.5 px-3 py-3 rounded-xl border border-slate-300 bg-white shadow-xs shrink-0">
+            <div className="flex items-center gap-1.5 px-3 py-3 rounded-xl border border-slate-300 bg-white shadow-xs shrink-0" aria-hidden="true">
               {/* Indonesian Flag SVG */}
               <div className="w-5 h-3.5 rounded-xs overflow-hidden border border-slate-200 flex flex-col shrink-0">
                 <div className="h-1/2 bg-[#FF0000]" />
@@ -106,20 +106,24 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
 
             {/* Number Input */}
             <input
+              id="phone-number-input"
+              name="phoneNumber"
               type="tel"
+              autoComplete="tel"
+              aria-label="Nomor Handphone"
               value={phoneNumber}
               onChange={(e) => {
                 setPhoneNumber(e.target.value.replace(/[^0-9]/g, ""));
                 if (errorMessage) setErrorMessage(null);
               }}
               placeholder="81373827173"
-              className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-[#0066D6] transition shadow-xs"
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-500 outline-none focus:border-[#0066D6] focus:ring-1 focus:ring-[#0066D6] transition shadow-xs"
             />
           </div>
 
           {/* Quick Demo Helper Hint */}
-          <div className="mt-1.5 flex items-center justify-between text-[10px]">
-            <span className="text-slate-400">Belum terdaftar tidak bisa masuk</span>
+          <div className="mt-1.5 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500 font-medium">Belum terdaftar tidak bisa masuk</span>
             <button
               type="button"
               onClick={() => {
@@ -127,6 +131,7 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
                 if (errorMessage) setErrorMessage(null);
               }}
               className="text-[#0066D6] font-semibold hover:underline cursor-pointer"
+              aria-label="Isi otomatis dengan Akun Demo"
             >
               Gunakan Akun Demo
             </button>
@@ -135,11 +140,21 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
 
         {/* Agreement Disclaimer Box */}
         <div
+          role="checkbox"
+          aria-checked={agreed}
+          tabIndex={0}
+          aria-label="Setujui Syarat dan Ketentuan Bidding Plus serta Kebijakan Privasi PT ENB Mobile Care"
+          onKeyDown={(e) => {
+            if (e.key === " " || e.key === "Enter") {
+              e.preventDefault();
+              setAgreed(!agreed);
+            }
+          }}
           onClick={() => setAgreed(!agreed)}
-          className="p-3.5 rounded-2xl bg-[#EDF5FD] border border-[#DCEBFC] flex items-start gap-3 cursor-pointer hover:bg-[#E4F0FC] transition"
+          className="p-3.5 rounded-2xl bg-[#EDF5FD] border border-[#DCEBFC] flex items-start gap-3 cursor-pointer hover:bg-[#E4F0FC] focus:outline-none focus:ring-2 focus:ring-[#0066D6] transition"
         >
           {/* Custom Radio Button */}
-          <div className="mt-0.5 shrink-0">
+          <div className="mt-0.5 shrink-0" aria-hidden="true">
             <div
               className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition ${
                 agreed ? "border-[#0066D6] bg-white" : "border-slate-400 bg-white"
@@ -149,7 +164,7 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
             </div>
           </div>
 
-          <p className="text-[11px] leading-relaxed text-slate-600">
+          <p className="text-[11px] leading-relaxed text-slate-700">
             Dengan masuk ke aplikasi Bidding Plus, saya menyatakan telah membaca dan menyetujui{" "}
             <span className="text-[#0066D6] font-semibold hover:underline">
               Syarat dan Ketentuan Bidding Plus
@@ -169,17 +184,17 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
             className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${
               isFormValid
                 ? "bg-[#0066D6] hover:bg-[#0055B8] text-white active:scale-[0.99] cursor-pointer"
-                : "bg-[#D1D5DB] text-slate-400 cursor-not-allowed"
+                : "bg-slate-300 text-slate-500 cursor-not-allowed"
             }`}
           >
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin text-white" />}
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin text-white" aria-hidden="true" />}
             <span>{isLoading ? "Memeriksa Akun..." : "Masuk"}</span>
           </button>
         </div>
       </form>
 
       {/* Footer Register Link */}
-      <div className="text-center pb-4 text-xs text-slate-600">
+      <div className="text-center pb-4 text-xs text-slate-700">
         <span>Belum Punya Akun ? </span>
         <button
           type="button"

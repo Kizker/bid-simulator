@@ -67,9 +67,9 @@ server {
     }
 }
 
-# 2. HTTPS Port 443 (Reverse Proxy ke Node.js Port 3030)
+# 2. HTTPS Port 443 (Reverse Proxy ke Node.js Port 3030 dengan HTTP/2 & Gzip)
 server {
-    listen $SERVER_IP:443 ssl;
+    listen $SERVER_IP:443 ssl http2;
     server_name bidsim.labtry.my.id;
 
     ssl_certificate     $CERT_PATH;
@@ -79,9 +79,60 @@ server {
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
 
-    # Anti-indexing headers
-    add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet" always;
+    # Gzip High-Speed Compression
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_min_length 256;
+    gzip_types
+        application/atom+xml
+        application/geo+json
+        application/javascript
+        application/x-javascript
+        application/json
+        application/ld+json
+        application/manifest+json
+        application/rdf+xml
+        application/rss+xml
+        application/xhtml+xml
+        application/xml
+        font/eot
+        font/otf
+        font/ttf
+        font/woff
+        font/woff2
+        image/svg+xml
+        text/css
+        text/javascript
+        text/plain
+        text/xml;
 
+    # Security & Anti-indexing headers
+    add_header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # 1. Cache-Control Immutable untuk Next.js Static Asset Chunks (JS & CSS)
+    location /_next/static/ {
+        proxy_pass http://127.0.0.1:3030;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        access_log off;
+    }
+
+    # 2. Cache-Control untuk file statis gambar, svg, dan web font
+    location ~* \.(ico|jpg|jpeg|png|gif|svg|webp|woff|woff2|ttf|eot)$ {
+        proxy_pass http://127.0.0.1:3030;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        add_header Cache-Control "public, max-age=86400, stale-while-revalidate=604800";
+        access_log off;
+    }
+
+    # 3. Main Route & WebSocket Reverse Proxy
     location / {
         proxy_pass http://127.0.0.1:3030;
         proxy_http_version 1.1;
@@ -95,6 +146,11 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+
+        # Performance & Buffer Tuning
+        proxy_buffers 8 32k;
+        proxy_buffer_size 64k;
+        proxy_busy_buffers_size 128k;
 
         # WebSocket timeouts
         proxy_read_timeout 86400s;

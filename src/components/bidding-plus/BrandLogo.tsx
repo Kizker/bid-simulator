@@ -11,11 +11,11 @@ export function BrandLogo({ variant = "megaphone", className = "", size = "md" }
   const titleSize = size === "sm" ? "text-base" : size === "lg" ? "text-2xl" : "text-xl";
 
   return (
-    <div className={`flex flex-col items-center justify-center text-center ${className}`}>
+    <div className={`flex flex-col items-center justify-center text-center ${className}`} role="img" aria-label="Logo Bidding Plus">
       {variant === "megaphone" ? (
         // Gold/Brown Megaphone from Screenshot 3 & 5
         <div className={`${iconSize} relative mb-1.5 flex items-center justify-center`}>
-          <svg viewBox="0 0 100 100" fill="none" className="w-full h-full drop-shadow-sm">
+          <svg viewBox="0 0 100 100" fill="none" className="w-full h-full drop-shadow-sm" aria-hidden="true" focusable="false">
             {/* Sound waves */}
             <path d="M72 32C76 38 78 44 78 50C78 56 76 62 72 68" stroke="#8A5A2B" strokeWidth="5" strokeLinecap="round" />
             <path d="M83 24C90 32 94 41 94 50C94 59 90 68 83 76" stroke="#8A5A2B" strokeWidth="5" strokeLinecap="round" />
@@ -34,7 +34,7 @@ export function BrandLogo({ variant = "megaphone", className = "", size = "md" }
       ) : (
         // Gavel / Auction Hammer from Screenshot 4 (OTP)
         <div className={`${iconSize} relative mb-1.5 flex items-center justify-center`}>
-          <svg viewBox="0 0 100 100" fill="none" className="w-full h-full drop-shadow-sm">
+          <svg viewBox="0 0 100 100" fill="none" className="w-full h-full drop-shadow-sm" aria-hidden="true" focusable="false">
             {/* Speed / impact bursts */}
             <path d="M22 45L12 42" stroke="#8A5A2B" strokeWidth="4" strokeLinecap="round" />
             <path d="M30 30L22 22" stroke="#8A5A2B" strokeWidth="4" strokeLinecap="round" />

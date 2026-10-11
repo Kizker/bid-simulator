@@ -3,13 +3,28 @@
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { MobileFrame } from "@/components/simulator/MobileFrame";
+import dynamic from "next/dynamic";
 import { LoginScreen } from "@/components/bidding-plus/LoginScreen";
-import { RegisterScreen } from "@/components/bidding-plus/RegisterScreen";
-import { HomeScreen } from "@/components/bidding-plus/HomeScreen";
-import { SessionsScreen } from "@/components/bidding-plus/SessionsScreen";
-import { CatalogScreen } from "@/components/bidding-plus/CatalogScreen";
-import { LiveDetailScreen } from "@/components/bidding-plus/LiveDetailScreen";
-import { WinningModal } from "@/components/simulator/WinningModal";
+
+const RegisterScreen = dynamic(
+  () => import("@/components/bidding-plus/RegisterScreen").then((m) => m.RegisterScreen)
+);
+const HomeScreen = dynamic(
+  () => import("@/components/bidding-plus/HomeScreen").then((m) => m.HomeScreen)
+);
+const SessionsScreen = dynamic(
+  () => import("@/components/bidding-plus/SessionsScreen").then((m) => m.SessionsScreen)
+);
+const CatalogScreen = dynamic(
+  () => import("@/components/bidding-plus/CatalogScreen").then((m) => m.CatalogScreen)
+);
+const LiveDetailScreen = dynamic(
+  () => import("@/components/bidding-plus/LiveDetailScreen").then((m) => m.LiveDetailScreen)
+);
+const WinningModal = dynamic(
+  () => import("@/components/simulator/WinningModal").then((m) => m.WinningModal)
+);
+
 import { getSocketClient } from "@/lib/socket-client";
 import type { AuctionRoom, Bid, SimulationConfig, User } from "@/db/schema";
 import type { BidModalState } from "@/components/bidding-plus/BidResponseModal";
@@ -158,12 +173,15 @@ function MainAppContent() {
   };
 
   useEffect(() => {
-    fetchAllRooms();
-  }, []);
+    // Optimasi LCP/FCP: Jangan unduh 336 lot room di layar login sebelum user masuk
+    if (currentUser || (currentScreen !== "login" && currentScreen !== "register")) {
+      fetchAllRooms();
+    }
+  }, [currentUser, currentScreen]);
 
   // Connect to Socket.io for live updates
   useEffect(() => {
-    if (!selectedLot) return;
+    if (!selectedLot || currentScreen !== "detail") return;
     const socket = getSocketClient();
 
     socket.emit("join_room", selectedLot.id);
@@ -307,7 +325,7 @@ function MainAppContent() {
       socket.off("bid_success");
       socket.off("bid_error");
     };
-  }, [selectedLot?.id]);
+  }, [selectedLot?.id, currentScreen]);
 
   // Navigation handlers with persistence
   const navigateTo = (next: ScreenType) => {
