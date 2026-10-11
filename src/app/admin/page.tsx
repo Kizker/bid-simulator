@@ -1296,18 +1296,9 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Status & Actions for Control view */}
+            {/* Status Indicator for Control view */}
             {activeNav === "control" && (
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsResetModalOpen(true)}
-                  disabled={isResettingUnits}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-800 transition active:scale-95 shadow-2xs cursor-pointer disabled:opacity-50"
-                  title="Reset penawaran seluruh unit lelang ke harga awal (Open Bid)"
-                >
-                  <RotateCcw className={`w-3.5 h-3.5 text-amber-700 ${isResettingUnits ? "animate-spin" : ""}`} />
-                  <span>Reset Semua Tawaran</span>
-                </button>
                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${
                   globalBotEnabled
                     ? "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -1570,48 +1561,44 @@ export default function AdminPage() {
             return (
               <div className="space-y-4">
                 {/* ========================================================= */}
-                {/* KARTU JAM SERVER REAL-TIME DENGAN MILIDETIK (UKURAN BESAR) */}
+                {/* 1. KARTU JAM SERVER REAL-TIME (BERSIH & INFORMASI UTAMA) */}
                 {/* ========================================================= */}
                 <div
                   className={`rounded-3xl border transition-all p-5 sm:p-6 shadow-xs relative overflow-hidden ${
                     scheduleInfo?.isLive
-                      ? "bg-gradient-to-br from-white via-blue-50/30 to-emerald-50/20 border-[#0066D6]/40 ring-4 ring-[#0066D6]/10"
+                      ? "bg-gradient-to-br from-white via-blue-50/25 to-emerald-50/20 border-[#0066D6]/40 ring-4 ring-[#0066D6]/10"
                       : "bg-white border-slate-200/90"
                   }`}
                 >
-                  {/* Decorative ambient background */}
-                  <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-blue-500/5 blur-2xl pointer-events-none" />
-
                   <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                    {/* Sisi Kiri: Label & Jam Raksasa */}
+                    {/* Sisi Kiri: Status Sesi & Jam Presisi */}
                     <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider bg-slate-100 text-slate-700">
-                          <Radio
-                            className={`w-3 h-3 ${
-                              scheduleInfo?.isLive ? "text-emerald-500 animate-pulse" : "text-slate-400"
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                            scheduleInfo?.isLive
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-slate-100 text-slate-600 border border-slate-200"
+                          }`}
+                        >
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              scheduleInfo?.isLive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
                             }`}
                           />
-                          <span>Waktu Server Presisi Tinggi</span>
+                          <span>{scheduleInfo?.isLive ? "Sesi Live Berlangsung" : "Sesi Dijeda / Standby"}</span>
                         </span>
-                        {scheduleInfo?.isLive ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 -ml-3.5" />
-                            <span>SESI SIMULASI LIVE BERLANGSUNG</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                            <span>STANDBY • DI LUAR JADWAL SIMULASI</span>
+
+                        {scheduleInfo?.isLive && scheduleInfo.remainingSeconds !== undefined && (
+                          <span className="text-xs text-slate-500 font-medium">
+                            Sisa: <strong className="text-slate-800 font-semibold">{formatDurationText(scheduleInfo.remainingSeconds)}</strong>
                           </span>
                         )}
                       </div>
 
-                      {/* TAMPILAN JAM RAKSASA DENGAN MILIDETIK */}
+                      {/* TAMPILAN JAM UTAMA */}
                       <div className="pt-1 flex flex-wrap items-baseline gap-2 sm:gap-3">
-                        {/* Jam : Menit : Detik */}
-                        <div className="font-mono font-black text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight text-slate-900 tabular-nums flex items-center">
+                        <div className="font-mono font-black text-4xl sm:text-6xl md:text-7xl tracking-tight text-slate-900 tabular-nums flex items-center">
                           <span className="px-2 sm:px-3 py-0.5 rounded-2xl bg-slate-900 text-white shadow-xs">
                             {serverTimeDisplay.hours}
                           </span>
@@ -1625,104 +1612,69 @@ export default function AdminPage() {
                           </span>
                         </div>
 
-                        {/* Pemisah Titik & Milidetik */}
-                        <div className="flex items-center gap-1.5 self-center sm:self-auto">
-                          <span className="text-2xl sm:text-4xl md:text-5xl font-black text-[#0066D6] font-mono">
+                        {/* Milidetik */}
+                        <div className="flex items-center gap-1 self-center">
+                          <span className="text-2xl sm:text-3xl font-black text-[#0066D6] font-mono">
                             .
                           </span>
-                          <div className="font-mono font-extrabold text-2xl sm:text-4xl md:text-5xl text-[#0066D6] bg-blue-50/90 px-3 py-1 sm:py-2 rounded-2xl border-2 border-blue-200/90 shadow-2xs tabular-nums">
+                          <div className="font-mono font-bold text-2xl sm:text-3xl text-[#0066D6] bg-blue-50/90 px-2.5 py-1 rounded-xl border border-blue-200/90 tabular-nums">
                             {serverTimeDisplay.milliseconds}
                           </div>
-                          <span className="text-xs sm:text-sm font-bold text-slate-400 font-sans ml-1">
+                          <span className="text-xs font-bold text-slate-400 ml-1">
                             WIB
                           </span>
                         </div>
                       </div>
 
-                      {/* Catatan Sesi */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 pt-1">
-                        <span className="flex items-center gap-1.5 font-medium">
-                          <Clock className="w-3.5 h-3.5 text-slate-400" />
-                          <span>
-                            Jadwal Operasional:{" "}
-                            <strong>{scheduleInfo?.publicDisplay || "10:00 - 16:00"}</strong>
-                          </span>
-                        </span>
-                        {scheduleInfo?.isLive && (
-                          <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            <span>Sisa Sesi: {formatDurationText(scheduleInfo.remainingSeconds)}</span>
-                          </span>
-                        )}
-                        <span className="text-slate-400">
-                          (Sinkronisasi waktu server presisi milidetik)
+                      {/* Jadwal Ringkas */}
+                      <div className="flex items-center gap-2 text-xs text-slate-500 pt-0.5">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <span>
+                          Jadwal Operasional:{" "}
+                          <strong className="text-slate-700 font-semibold">{scheduleInfo?.publicDisplay || "10:00 - 16:00"} WIB</strong>
                         </span>
                       </div>
                     </div>
 
-                    {/* Sisi Kanan: Quick Summary Status & Mode */}
-                    <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0 border-t lg:border-t-0 lg:border-l border-slate-100 pt-3 lg:pt-0 lg:pl-6 justify-center">
-                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1 min-w-[190px]">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">
-                          Status Bot Simulasi
+                    {/* Sisi Kanan: 3 Metrik Inti (Ringkas, Bersih, Tanpa Tombol) */}
+                    <div className="grid grid-cols-3 gap-2.5 shrink-0 border-t lg:border-t-0 lg:border-l border-slate-100 pt-3 lg:pt-0 lg:pl-6">
+                      <div className="p-3 px-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-center min-w-[95px]">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                          Total Unit
                         </span>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
-                            <span
-                              className={`w-2 h-2 rounded-full ${
-                                globalBotEnabled ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
-                              }`}
-                            />
-                            {globalBotEnabled ? "Bot Aktif Menawar" : "Bot Dijeda"}
-                          </span>
-                          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 font-mono">
-                            {bots.filter((b) => b.isActive === 1).length} Bot
-                          </span>
-                        </div>
+                        <span className="text-lg font-black text-slate-900 font-mono block mt-0.5">
+                          {rooms.length}
+                        </span>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1 min-w-[190px]">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">
-                          Penawaran Publik
+                      <div className="p-3 px-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-center min-w-[95px]">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                          Bot Aktif
                         </span>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-xs text-emerald-700 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                            Selalu Terbuka
-                          </span>
-                          <span className="text-[10px] text-slate-500">
-                            {registeredUsers.length} Peserta
-                          </span>
-                        </div>
+                        <span className="text-lg font-black text-slate-900 font-mono block mt-0.5">
+                          {bots.filter((b) => b.isActive === 1).length}
+                          <span className="text-xs font-normal text-slate-400">/{bots.length}</span>
+                        </span>
                       </div>
 
-                      {/* Kartu Tombol Reset Tawaran Semua Unit */}
-                      <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/90 space-y-1.5 min-w-[190px]">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-extrabold uppercase text-amber-800 tracking-wider">
-                            Reset Penawaran
-                          </span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-900">
-                            {rooms.length} Unit
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => setIsResetModalOpen(true)}
-                          disabled={isResettingUnits}
-                          className="w-full py-1.5 px-2.5 rounded-lg text-xs font-bold bg-[#0066D6] hover:bg-[#0055B8] active:scale-95 text-white transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
-                        >
-                          <RotateCcw className={`w-3.5 h-3.5 ${isResettingUnits ? "animate-spin" : ""}`} />
-                          <span>Reset ke Open Bid</span>
-                        </button>
+                      <div className="p-3 px-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-center min-w-[95px]">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                          Peserta
+                        </span>
+                        <span className="text-lg font-black text-emerald-700 font-mono block mt-0.5">
+                          {registeredUsers.length}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* KONTROL TERPADU: BOT & JADWAL OPERASIONAL */}
-                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  {/* Bagian Kiri: Tombol & Status Bot + Aksi Reset Tawaran */}
-                  <div className="flex flex-wrap items-center gap-3">
+                {/* ========================================================= */}
+                {/* 2. BARIS KONTROL OPERASIONAL TERPADU (SATU BARIS BERSIH)  */}
+                {/* ========================================================= */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  {/* Kontrol Bot */}
+                  <div className="flex items-center gap-3">
                     {globalBotEnabled ? (
                       <button
                         onClick={() => {
@@ -1731,7 +1683,7 @@ export default function AdminPage() {
                           showNotice("Seluruh bot berhasil dijeda");
                         }}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-600 text-white shadow-2xs transition active:scale-95 cursor-pointer"
-                        title="Jeda seluruh bot: bot berhenti menawar, countdown simulasi tetap mengikuti jadwal"
+                        title="Jeda seluruh bot penawar"
                       >
                         <Pause className="w-3.5 h-3.5 fill-current" />
                         <span>Jeda Bot</span>
@@ -1744,7 +1696,7 @@ export default function AdminPage() {
                           showNotice("Seluruh bot berhasil diaktifkan kembali");
                         }}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition active:scale-95 cursor-pointer"
-                        title="Mulai seluruh bot: bot aktif menawar secara otomatis"
+                        title="Mulai seluruh bot penawar"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" />
                         <span>Mulai Bot</span>
@@ -1761,84 +1713,59 @@ export default function AdminPage() {
                         {globalBotEnabled ? "Bot Aktif" : "Bot Dijeda"}
                       </span>
                     </div>
-
-                    {/* Tombol Aksi Cepat: Reset Tawaran Semua Unit ke Open Bid */}
-                    <div className="pl-2 border-l border-slate-200">
-                      <button
-                        onClick={() => setIsResetModalOpen(true)}
-                        disabled={isResettingUnits}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs transition active:scale-95 cursor-pointer disabled:opacity-50"
-                        title="Reset semua penawaran unit agar kembali ke harga mulai (Open Bid)"
-                      >
-                        <RotateCcw className={`w-3.5 h-3.5 text-amber-700 ${isResettingUnits ? "animate-spin" : ""}`} />
-                        <span>Reset Tawaran ke Open Bid</span>
-                      </button>
-                    </div>
                   </div>
 
-                  {/* Bagian Kanan: Jadwal Sesi Operasional */}
+                  {/* Pengaturan Jadwal Sesi */}
                   <div className="flex flex-wrap items-center gap-2.5 text-xs">
-                    <div className="flex items-center gap-1.5 font-bold text-slate-700">
+                    <span className="font-bold text-slate-700 flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 text-[#0066D6]" />
-                      <span>Jadwal Sesi:</span>
-                    </div>
-
-                    {/* Jam Mulai */}
-                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl">
-                      <span className="text-slate-400 font-medium text-[11px]">Mulai:</span>
-                      <input
-                        type="time"
-                        step="1"
-                        value={scheduleStartTime}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setScheduleStartTime(val.length === 5 ? `${val}:00` : val);
-                        }}
-                        className="font-mono font-bold text-xs text-slate-800 bg-transparent outline-none cursor-pointer"
-                      />
-                    </div>
-
-                    <span className="text-slate-400 font-medium">s/d</span>
-
-                    {/* Jam Selesai */}
-                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl">
-                      <span className="text-slate-400 font-medium text-[11px]">Selesai:</span>
-                      <input
-                        type="time"
-                        step="1"
-                        value={scheduleEndTime}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setScheduleEndTime(val.length === 5 ? `${val}:00` : val);
-                        }}
-                        className="font-mono font-bold text-xs text-slate-800 bg-transparent outline-none cursor-pointer"
-                      />
-                    </div>
-
-                    {/* Status Sesi Jadwal */}
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold ${
-                        scheduleInfo?.isLive
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : "bg-slate-100 text-slate-600 border border-slate-200"
-                      }`}
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          scheduleInfo?.isLive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
-                        }`}
-                      />
-                      <span>{scheduleInfo?.isLive ? "Sesi Berjalan" : "Di Luar Jadwal"}</span>
+                      <span>Jadwal:</span>
                     </span>
 
-                    {/* Tombol Terapkan */}
+                    <input
+                      type="time"
+                      step="1"
+                      value={scheduleStartTime}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setScheduleStartTime(val.length === 5 ? `${val}:00` : val);
+                      }}
+                      className="bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl font-mono font-bold text-xs text-slate-800 outline-none focus:border-[#0066D6] cursor-pointer"
+                    />
+
+                    <span className="text-slate-400">s/d</span>
+
+                    <input
+                      type="time"
+                      step="1"
+                      value={scheduleEndTime}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setScheduleEndTime(val.length === 5 ? `${val}:00` : val);
+                      }}
+                      className="bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-xl font-mono font-bold text-xs text-slate-800 outline-none focus:border-[#0066D6] cursor-pointer"
+                    />
+
                     <button
                       onClick={() => handleSaveSchedule(true)}
                       disabled={isSavingSchedule}
-                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0066D6] hover:bg-[#0052B3] text-white transition active:scale-95 shadow-2xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#0066D6] hover:bg-[#0052B3] text-white transition active:scale-95 shadow-2xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
                     >
                       <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>{isSavingSchedule ? "Menyimpan..." : "Terapkan"}</span>
+                      <span>{isSavingSchedule ? "..." : "Terapkan"}</span>
+                    </button>
+                  </div>
+
+                  {/* SATU-SATUNYA TOMBOL RESET PENAWARAN (TIDAK ADA DOUBLE BUTTON) */}
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => setIsResetModalOpen(true)}
+                      disabled={isResettingUnits}
+                      className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs transition active:scale-95 cursor-pointer disabled:opacity-50"
+                      title="Kembalikan semua tawaran unit lelang ke harga mulai (Open Bid)"
+                    >
+                      <RotateCcw className={`w-3.5 h-3.5 text-amber-700 ${isResettingUnits ? "animate-spin" : ""}`} />
+                      <span>Reset Penawaran ke Open Bid</span>
                     </button>
                   </div>
                 </div>
