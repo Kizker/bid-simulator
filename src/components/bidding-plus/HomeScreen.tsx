@@ -203,6 +203,10 @@ export function HomeScreen({ user, onSelectCategory, onLogout }: HomeScreenProps
                   <img
                     src="https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=400&q=80"
                     alt="Bidding Plus Gadgets"
+                    width="144"
+                    height="128"
+                    loading="lazy"
+                    decoding="async"
                     className="w-36 h-32 object-contain drop-shadow-lg"
                   />
                 </div>
@@ -601,16 +605,19 @@ export function HomeScreen({ user, onSelectCategory, onLogout }: HomeScreenProps
       {/* ========================================================== */}
       {/* 5. BOTTOM NAVIGATION BAR (MATCHING SCREENSHOT 1, 2, 3, 4) */}
       {/* ========================================================== */}
-      <div className="border-t border-slate-100 bg-white px-6 py-2 flex items-center justify-between shadow-lg shrink-0 z-20">
+      <nav aria-label="Navigasi Menu Utama" className="border-t border-slate-100 bg-white px-6 py-1 flex items-center justify-between shadow-lg shrink-0 z-20">
         {/* Tab 1: Beranda */}
         <button
+          type="button"
           onClick={() => handleTabChange("beranda")}
-          className={`flex flex-col items-center gap-0.5 transition cursor-pointer ${
-            activeTab === "beranda" ? "text-[#0066D6]" : "text-slate-400 hover:text-slate-600"
+          aria-label="Menu Beranda"
+          aria-current={activeTab === "beranda" ? "page" : undefined}
+          className={`min-w-[48px] min-h-[48px] flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${
+            activeTab === "beranda" ? "text-[#0055B8]" : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <div className="w-6 h-6 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-current" strokeWidth="2">
+            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-current" strokeWidth="2" aria-hidden="true">
               <path
                 d="M4 10.5L12 3.5L20 10.5V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V10.5Z"
                 strokeLinecap="round"
@@ -619,58 +626,67 @@ export function HomeScreen({ user, onSelectCategory, onLogout }: HomeScreenProps
               <path d="M9 15C10 16.5 14 16.5 15 15" strokeLinecap="round" />
             </svg>
           </div>
-          <span className="text-[10px] font-medium">Beranda</span>
+          <span className="text-[10px] font-semibold">Beranda</span>
         </button>
 
         {/* Tab 2: Transaksi */}
         <button
+          type="button"
           onClick={() => handleTabChange("transaksi")}
-          className={`flex flex-col items-center gap-0.5 transition cursor-pointer ${
-            activeTab === "transaksi" ? "text-[#0066D6]" : "text-slate-400 hover:text-slate-600"
+          aria-label="Menu Transaksi"
+          aria-current={activeTab === "transaksi" ? "page" : undefined}
+          className={`min-w-[48px] min-h-[48px] flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${
+            activeTab === "transaksi" ? "text-[#0055B8]" : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <div className="w-6 h-6 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-current" strokeWidth="2">
+            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-current" strokeWidth="2" aria-hidden="true">
               <circle cx="12" cy="12" r="9" />
               <path d="M12 7V17M14.5 9.5C14.5 8.39543 13.3807 7.5 12 7.5C10.6193 7.5 9.5 8.39543 9.5 9.5C9.5 10.6046 10.6193 11.5 12 11.5C13.3807 11.5 14.5 12.3954 14.5 13.5C14.5 14.6046 13.3807 15.5 12 15.5C10.6193 15.5 9.5 14.6046 9.5 13.5" strokeLinecap="round" />
             </svg>
           </div>
-          <span className="text-[10px] font-medium">Transaksi</span>
+          <span className="text-[10px] font-semibold">Transaksi</span>
         </button>
 
         {/* Tab 3: Pesan */}
         <button
+          type="button"
           onClick={() => handleTabChange("pesan")}
-          className={`flex flex-col items-center gap-0.5 transition cursor-pointer relative ${
-            activeTab === "pesan" ? "text-[#0066D6]" : "text-slate-400 hover:text-slate-600"
+          aria-label="Menu Pesan"
+          aria-current={activeTab === "pesan" ? "page" : undefined}
+          className={`min-w-[48px] min-h-[48px] flex flex-col items-center justify-center gap-0.5 transition cursor-pointer relative ${
+            activeTab === "pesan" ? "text-[#0055B8]" : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <div className="w-6 h-6 flex items-center justify-center relative">
-            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-current" strokeWidth="2">
+            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-current" strokeWidth="2" aria-hidden="true">
               <path d="M21 11.5C21 15.5 17.5 18.5 12 18.5C10.5 18.5 9 18.2 7.8 17.6L3 19L4.4 15.2C3.5 14.1 3 12.8 3 11.5C3 7.5 7 4.5 12 4.5C17 4.5 21 7.5 21 11.5Z" />
             </svg>
             {/* Green Notification Dot on top right */}
-            <div className="w-2.5 h-2.5 rounded-full bg-[#22C55E] absolute -top-0.5 -right-0.5 ring-2 ring-white" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[#16A34A] absolute -top-0.5 -right-0.5 ring-2 ring-white" />
           </div>
-          <span className="text-[10px] font-medium">Pesan</span>
+          <span className="text-[10px] font-semibold">Pesan</span>
         </button>
 
         {/* Tab 4: Profil */}
         <button
+          type="button"
           onClick={() => handleTabChange("profil")}
-          className={`flex flex-col items-center gap-0.5 transition cursor-pointer ${
-            activeTab === "profil" ? "text-[#0066D6]" : "text-slate-400 hover:text-slate-600"
+          aria-label="Menu Profil"
+          aria-current={activeTab === "profil" ? "page" : undefined}
+          className={`min-w-[48px] min-h-[48px] flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${
+            activeTab === "profil" ? "text-[#0055B8]" : "text-slate-600 hover:text-slate-900"
           }`}
         >
           <div className="w-6 h-6 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-current" strokeWidth="2">
+            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 stroke-current" strokeWidth="2" aria-hidden="true">
               <circle cx="12" cy="8" r="4" />
               <path d="M5 20C5 16.5 8 14 12 14C16 14 19 16.5 19 20" strokeLinecap="round" />
             </svg>
           </div>
-          <span className="text-[10px] font-medium">Profil</span>
+          <span className="text-[10px] font-semibold">Profil</span>
         </button>
-      </div>
+      </nav>
 
       {/* ========================================================== */}
       {/* MODAL DETAIL INFORMATION */}

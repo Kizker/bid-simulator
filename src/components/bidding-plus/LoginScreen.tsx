@@ -131,8 +131,7 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
                 setPhoneNumber("81373827173");
                 if (errorMessage) setErrorMessage(null);
               }}
-              className="text-[#0055B8] font-bold hover:underline cursor-pointer"
-              aria-label="Isi otomatis dengan Akun Demo"
+              className="text-[#0055B8] font-bold hover:underline cursor-pointer min-h-[36px] flex items-center"
             >
               Gunakan Akun Demo
             </button>
@@ -140,22 +139,18 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
         </div>
 
         {/* Agreement Disclaimer Box */}
-        <div
-          role="checkbox"
-          aria-checked={agreed}
-          aria-required="true"
-          tabIndex={0}
-          aria-label="Setujui Syarat dan Ketentuan Bidding Plus serta Kebijakan Privasi PT ENB Mobile Care"
-          onKeyDown={(e) => {
-            if (e.key === " " || e.key === "Enter") {
-              e.preventDefault();
-              setAgreed(!agreed);
-            }
-          }}
-          onClick={() => setAgreed(!agreed)}
-          className="p-3.5 rounded-2xl bg-[#EDF5FD] border border-[#DCEBFC] flex items-start gap-3 cursor-pointer hover:bg-[#E4F0FC] focus:outline-none focus:ring-2 focus:ring-[#0055B8] transition"
+        <label
+          htmlFor="login-agreement-checkbox"
+          className="p-3.5 rounded-2xl bg-[#EDF5FD] border border-[#DCEBFC] flex items-start gap-3 cursor-pointer hover:bg-[#E4F0FC] focus-within:ring-2 focus-within:ring-[#0055B8] transition"
         >
-          {/* Custom Radio Button */}
+          <input
+            id="login-agreement-checkbox"
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="sr-only"
+          />
+          {/* Custom Radio/Check visual */}
           <div className="mt-0.5 shrink-0" aria-hidden="true">
             <div
               className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition ${
@@ -166,7 +161,7 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
             </div>
           </div>
 
-          <p className="text-[11px] leading-relaxed text-slate-800">
+          <p className="text-[11px] leading-relaxed text-slate-800 select-none">
             Dengan masuk ke aplikasi Bidding Plus, saya menyatakan telah membaca dan menyetujui{" "}
             <span className="text-[#0055B8] font-bold hover:underline">
               Syarat dan Ketentuan Bidding Plus
@@ -176,15 +171,14 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
               Kebijakan Privasi PT ENB Mobile Care
             </span>
           </p>
-        </div>
+        </label>
 
         {/* Submit Button */}
         <div className="pt-4">
           <button
             type="submit"
             disabled={!isFormValid}
-            aria-label="Masuk ke aplikasi Bidding Plus"
-            className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${
+            className={`w-full min-h-[48px] py-3.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${
               isFormValid
                 ? "bg-[#0055B8] hover:bg-[#004494] text-white active:scale-[0.99] cursor-pointer"
                 : "bg-slate-300 text-slate-600 cursor-not-allowed"
@@ -202,7 +196,6 @@ export function LoginScreen({ onSuccess, onGoToRegister }: LoginScreenProps) {
         <button
           type="button"
           onClick={onGoToRegister}
-          aria-label="Buka halaman pendaftaran akun baru"
           className="text-[#0055B8] font-bold hover:underline cursor-pointer"
         >
           Daftar Sekarang

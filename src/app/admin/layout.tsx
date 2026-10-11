@@ -115,7 +115,7 @@ export default function AdminLayout({
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition" />
             <span>Kembali ke Web Publik</span>
           </Link>
-          <span className="text-[11px] font-semibold text-slate-400 bg-white px-2.5 py-1 rounded-full border border-slate-200">
+          <span className="text-[11px] font-bold text-slate-700 bg-white px-2.5 py-1 rounded-full border border-slate-200">
             Panel Pengelola
           </span>
         </header>
@@ -131,7 +131,7 @@ export default function AdminLayout({
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">
                 Masuk Admin CMS
               </h2>
-              <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+              <p className="text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
                 Kelola lot produk, kendalikan timer lelang, dan pantau penawaran Bidding Plus.
               </p>
             </div>
@@ -186,7 +186,8 @@ export default function AdminLayout({
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                    aria-label={showPassword ? "Sembunyikan password" : "Lihat password"}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition cursor-pointer min-w-[36px] min-h-[36px] justify-center"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -197,7 +198,7 @@ export default function AdminLayout({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-2.5 rounded-xl text-xs font-bold bg-[#0066D6] hover:bg-[#0055B8] active:scale-[0.99] text-white shadow-xs transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl text-xs font-bold bg-[#0066D6] hover:bg-[#0055B8] active:scale-[0.99] text-white shadow-xs transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
               >
                 {isSubmitting ? (
                   <>
@@ -212,7 +213,7 @@ export default function AdminLayout({
 
             {/* Quick credentials hint */}
             <div className="pt-2 border-t border-slate-100 text-center">
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-slate-600">
                 Default: Username <strong className="text-slate-800 font-mono">admin</strong> · Password <strong className="text-slate-800 font-mono">admin123</strong>
               </span>
             </div>
@@ -220,7 +221,7 @@ export default function AdminLayout({
         </main>
 
         {/* Footer */}
-        <footer className="max-w-md mx-auto w-full text-center text-[11px] text-slate-400 py-2">
+        <footer className="max-w-md mx-auto w-full text-center text-[11px] text-slate-600 font-medium py-2">
           Bidding Plus CMS Controller · Hak Cipta Terlindungi
         </footer>
       </div>

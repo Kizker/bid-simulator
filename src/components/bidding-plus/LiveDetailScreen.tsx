@@ -187,14 +187,49 @@ export function LiveDetailScreen({
     }
   };
 
+  const getOptimizedImageUrl = (url: string) => {
+    if (!url) return "/images/samsung-z-flip-5.webp";
+    if (url.includes("1610945415295") || url.includes("samsung-z-flip")) {
+      return "/images/samsung-z-flip-5.webp";
+    }
+    if (url.includes("1592750475338") || url.includes("iphone")) {
+      return "/images/iphone.webp";
+    }
+    if (url.includes("1585060544812") || url.includes("android")) {
+      return "/images/android.webp";
+    }
+    if (url.startsWith("/")) {
+      return url;
+    }
+    if (url.includes("images.unsplash.com")) {
+      let clean = url;
+      if (clean.includes("w=")) {
+        clean = clean.replace(/w=\d+/, "w=360");
+      } else {
+        clean += "&w=360";
+      }
+      if (clean.includes("q=")) {
+        clean = clean.replace(/q=\d+/, "q=75");
+      } else {
+        clean += "&q=75";
+      }
+      if (!clean.includes("auto=format")) {
+        clean += "&auto=format";
+      }
+      return clean;
+    }
+    return url;
+  };
+
   return (
     <div className="flex-1 flex flex-col bg-white text-slate-800 select-none overflow-hidden justify-between relative">
       {/* Top Header (1:1 with Screenshot) */}
-      <div className="bg-[#0055B8] px-4 py-3 flex items-center justify-between text-white shadow-xs shrink-0 z-10">
+      <header className="bg-[#0055B8] px-4 py-2.5 flex items-center justify-between text-white shadow-xs shrink-0 z-10">
         <button
+          type="button"
           onClick={onBack}
-          aria-label="Kembali ke halaman sebelumnya"
-          className="p-1 -ml-1 text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
+          aria-label="Kembali ke katalog barang"
+          className="w-11 h-11 min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
         >
           <ChevronLeft className="w-6 h-6 stroke-[2.5]" aria-hidden="true" />
         </button>
@@ -207,7 +242,7 @@ export function LiveDetailScreen({
         <button
           type="button"
           onClick={() => alert("Mengunduh katalog unit lelang...")}
-          className="p-1 -mr-1 text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
+          className="w-11 h-11 min-w-[44px] min-h-[44px] -mr-2 flex items-center justify-center text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
           aria-label="Unduh Brosur Katalog Unit Lelang"
           title="Unduh Brosur"
         >
@@ -224,7 +259,7 @@ export function LiveDetailScreen({
             <path d="M12 4V14M12 14L8 10M12 14L16 10" />
           </svg>
         </button>
-      </div>
+      </header>
 
       {/* Banner Penalti 1 Menit jika Banned */}
       {isCurrentlyBanned && (
@@ -246,8 +281,8 @@ export function LiveDetailScreen({
         {/* Product Image Showcase */}
         <div className="w-full h-44 flex items-center justify-center bg-white p-2">
           <img
-            src={room.imageUrl}
-            alt={room.title || "Foto Unit Smartphone Lelang"}
+            src={getOptimizedImageUrl(room.imageUrl)}
+            alt={`${room.title || "Smartphone"} - Unit Lelang Bidding Reguler`}
             width="320"
             height="176"
             loading="eager"
@@ -261,36 +296,39 @@ export function LiveDetailScreen({
         <div className="flex items-start justify-between gap-3 pt-1">
           {/* Left: Starting Price & Stock */}
           <div className="space-y-1">
-            <p className="text-xs font-bold text-[#0369A1] leading-tight">
+            <h2 className="sr-only">{room.title}</h2>
+            <p className="text-xs font-bold text-[#0055B8] leading-tight">
               Harga Mulai : {formatIDR(room.startingPrice)}
             </p>
-            <p className="text-xs text-slate-900 font-medium">
+            <p className="text-xs text-slate-800 font-medium">
               Stok : {room.stock || 1}
             </p>
           </div>
 
           {/* Right: Badges (AE) FAIR & (Terdaftar) */}
           <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold text-[#0369A1] border border-[#0369A1] bg-white leading-tight">
+            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold text-[#0055B8] border border-[#0055B8] bg-blue-50/40 leading-tight">
               {room.lotBadge || "(AE) FAIR"}
             </span>
-            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold text-[#0369A1] border border-[#0369A1] bg-white leading-tight">
+            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold text-[#0055B8] border border-[#0055B8] bg-blue-50/40 leading-tight">
               (Terdaftar)
             </span>
           </div>
         </div>
 
-        {/* Tabs: Deskripsi vs Spesifikasi (Outlined in Blue & Green with High Contrast) */}
-        <div className="grid grid-cols-2 gap-3 pt-1">
+        {/* Tabs: Deskripsi vs Spesifikasi */}
+        <div className="grid grid-cols-2 gap-3 pt-1" role="tablist" aria-label="Informasi Rincian Unit">
           <button
             type="button"
+            role="tab"
+            id="tab-deskripsi"
+            aria-controls="panel-deskripsi"
+            aria-selected={activeTab === "deskripsi"}
             onClick={() => setActiveTab(activeTab === "deskripsi" ? null : "deskripsi")}
-            aria-expanded={activeTab === "deskripsi"}
-            aria-label="Tampilkan deskripsi lot"
-            className={`py-2 rounded-lg text-xs font-bold border transition text-center cursor-pointer ${
+            className={`min-h-[44px] py-2 px-3 rounded-lg text-xs font-bold border transition text-center cursor-pointer flex items-center justify-center ${
               activeTab === "deskripsi"
-                ? "border-[#0055B8] text-[#0055B8] bg-blue-50/30 shadow-2xs"
-                : "border-[#0055B8] text-[#0055B8] bg-white hover:bg-blue-50/10"
+                ? "border-[#0055B8] text-[#0055B8] bg-blue-50/40 shadow-2xs"
+                : "border-[#0055B8] text-[#0055B8] bg-white hover:bg-blue-50/20"
             }`}
           >
             Deskripsi
@@ -298,13 +336,15 @@ export function LiveDetailScreen({
 
           <button
             type="button"
+            role="tab"
+            id="tab-spesifikasi"
+            aria-controls="panel-spesifikasi"
+            aria-selected={activeTab === "spesifikasi"}
             onClick={() => setActiveTab(activeTab === "spesifikasi" ? null : "spesifikasi")}
-            aria-expanded={activeTab === "spesifikasi"}
-            aria-label="Tampilkan spesifikasi lot"
-            className={`py-2 rounded-lg text-xs font-bold border transition text-center cursor-pointer ${
+            className={`min-h-[44px] py-2 px-3 rounded-lg text-xs font-bold border transition text-center cursor-pointer flex items-center justify-center ${
               activeTab === "spesifikasi"
-                ? "border-[#15803D] text-[#15803D] bg-emerald-50/30 shadow-2xs"
-                : "border-[#15803D] text-[#15803D] bg-white hover:bg-emerald-50/10"
+                ? "border-[#166534] text-[#166534] bg-emerald-50/40 shadow-2xs"
+                : "border-[#166534] text-[#166534] bg-white hover:bg-emerald-50/20"
             }`}
           >
             Spesifikasi
@@ -313,7 +353,12 @@ export function LiveDetailScreen({
 
         {/* Tab Detail Preview (Expandable if tapped) */}
         {activeTab && (
-          <div className="text-xs text-slate-700 leading-relaxed bg-slate-50/90 p-3 rounded-xl border border-slate-200 animate-in fade-in duration-150">
+          <div
+            role="tabpanel"
+            id={activeTab === "deskripsi" ? "panel-deskripsi" : "panel-spesifikasi"}
+            aria-labelledby={activeTab === "deskripsi" ? "tab-deskripsi" : "tab-spesifikasi"}
+            className="text-xs text-slate-800 leading-relaxed bg-slate-50/95 p-3 rounded-xl border border-slate-200 animate-in fade-in duration-150"
+          >
             {activeTab === "deskripsi" ? (
               <p>{room.description || "Unit lelang kondisi fisik mulus, fungsi tested normal 100%, siap pakai harian."}</p>
             ) : (
@@ -327,8 +372,8 @@ export function LiveDetailScreen({
           <div className="flex items-center justify-between pb-1">
             <h2 className="font-bold text-sm text-slate-900">Penawaran</h2>
 
-            <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
-              <Clock className="w-4 h-4 text-slate-600 stroke-[2]" aria-hidden="true" />
+            <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
+              <Clock className="w-4 h-4 text-slate-700 stroke-[2]" aria-hidden="true" />
               <span>{formatTimer(timeRemaining)}</span>
             </div>
           </div>
@@ -336,7 +381,7 @@ export function LiveDetailScreen({
           {/* Live Stream Bids Rows (1:1 with Screenshot) */}
           <div className="space-y-1 pb-2">
             {bids.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-600">
+              <div className="py-6 text-center text-xs text-slate-700">
                 Belum ada penawaran. Jadilah penawar pertama!
               </div>
             ) : (
@@ -380,7 +425,7 @@ export function LiveDetailScreen({
           <p className="text-base font-bold text-slate-900 leading-tight">
             {formatIDR(targetBidPrice)}
           </p>
-          <p className="text-xs font-bold text-[#0369A1] mt-0.5">
+          <p className="text-xs font-bold text-[#0055B8] mt-0.5">
             Selisih {formatIDR(selisihTotal)}
           </p>
         </div>
@@ -392,15 +437,19 @@ export function LiveDetailScreen({
             type="button"
             onClick={handleDecrement}
             disabled={isCurrentlyBanned || stepCount <= 1}
-            aria-label="Kurangi kelipatan penawaran harga"
-            className="w-10 h-10 rounded-lg border border-[#0369A1] flex items-center justify-center text-slate-900 disabled:border-slate-300 disabled:text-slate-400 hover:bg-sky-50 transition active:scale-95 cursor-pointer shrink-0 font-bold text-xl select-none"
+            aria-label="Kurangi kelipatan penawaran harga sebesar Rp 20.000"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg border-2 border-[#0055B8] flex items-center justify-center text-slate-900 disabled:border-slate-300 disabled:text-slate-400 hover:bg-blue-50 transition active:scale-95 cursor-pointer shrink-0 font-bold text-2xl select-none"
           >
             -
           </button>
 
           {/* Range Slider with Purple Thumb */}
           <div className="flex-1 relative flex items-center px-1">
+            <label htmlFor="bid-step-slider" className="sr-only">
+              Pilih kelipatan kenaikan penawaran harga
+            </label>
             <input
+              id="bid-step-slider"
               type="range"
               min="1"
               max={maxSteps}
@@ -408,12 +457,12 @@ export function LiveDetailScreen({
               value={stepCount}
               disabled={isCurrentlyBanned}
               onChange={handleSliderChange}
-              aria-label="Pilih kenaikan harga penawaran"
+              aria-label="Pilih kelipatan kenaikan penawaran harga"
               aria-valuemin={1}
               aria-valuemax={maxSteps}
               aria-valuenow={stepCount}
               aria-valuetext={`Selisih ${formatIDR(selisihTotal)}`}
-              className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#5B4DB2] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#5B4DB2] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -422,8 +471,8 @@ export function LiveDetailScreen({
             type="button"
             onClick={handleIncrement}
             disabled={isCurrentlyBanned || stepCount >= maxSteps}
-            aria-label="Tambah kelipatan penawaran harga"
-            className="w-10 h-10 rounded-lg border border-[#0369A1] flex items-center justify-center text-slate-900 disabled:border-slate-300 disabled:text-slate-400 hover:bg-sky-50 transition active:scale-95 cursor-pointer shrink-0 font-bold text-xl select-none"
+            aria-label="Tambah kelipatan penawaran harga sebesar Rp 20.000"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-lg border-2 border-[#0055B8] flex items-center justify-center text-slate-900 disabled:border-slate-300 disabled:text-slate-400 hover:bg-blue-50 transition active:scale-95 cursor-pointer shrink-0 font-bold text-2xl select-none"
           >
             +
           </button>
@@ -434,8 +483,7 @@ export function LiveDetailScreen({
           type="button"
           onClick={handleTawar}
           disabled={isSubmitting || isCurrentlyBanned}
-          aria-label="Kirim penawaran harga lelang sekarang"
-          className={`w-full py-3.5 rounded-xl font-bold text-sm transition cursor-pointer text-center mt-1 ${
+          className={`w-full min-h-[48px] py-3.5 rounded-xl font-bold text-sm transition cursor-pointer text-center mt-1 flex items-center justify-center ${
             isCurrentlyBanned
               ? "bg-slate-300 text-slate-600 cursor-not-allowed shadow-none"
               : "bg-[#0055B8] hover:bg-[#004494] active:scale-[0.99] text-white shadow-md shadow-blue-500/20"

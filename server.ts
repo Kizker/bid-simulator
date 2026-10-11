@@ -71,20 +71,34 @@ async function main() {
     ".json": "application/json",
   };
 
-  const serveStaticFile = (res: any, filePath: string) => {
+  const zlibModule = require("node:zlib");
+
+  const serveStaticFile = (req: any, res: any, filePath: string) => {
     try {
       const pathModule = require("node:path");
       const fsModule = require("node:fs");
       const ext = pathModule.extname(filePath);
       const contentType = mimeTypes[ext] || "application/octet-stream";
-      const stat = fsModule.statSync(filePath);
-      res.writeHead(200, {
-        "Content-Type": contentType,
-        "Content-Length": stat.size,
-        "Cache-Control": "public, max-age=31536000, immutable",
-        "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",
-      });
-      fsModule.createReadStream(filePath).pipe(res);
+      const acceptEncoding = (req.headers["accept-encoding"] || "").toString();
+      const isCompressible = /\.(js|css|svg|json|html|txt)$/i.test(filePath);
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive, nosnippet");
+
+      if (isCompressible && /\bgzip\b/.test(acceptEncoding)) {
+        res.setHeader("Content-Encoding", "gzip");
+        res.setHeader("Vary", "Accept-Encoding");
+        res.writeHead(200);
+        const rawStream = fsModule.createReadStream(filePath);
+        const gzipStream = zlibModule.createGzip({ level: 6 });
+        rawStream.pipe(gzipStream).pipe(res);
+      } else {
+        const stat = fsModule.statSync(filePath);
+        res.setHeader("Content-Length", stat.size);
+        res.writeHead(200);
+        fsModule.createReadStream(filePath).pipe(res);
+      }
     } catch {
       res.writeHead(404);
       res.end();
@@ -93,6 +107,11 @@ async function main() {
 
   const pathModule = require("node:path");
   const fsModule = require("node:fs");
+
+  const compression = require("compression");
+  const compressMiddleware = compression({
+    threshold: 1024,
+  });
 
   const httpServer = createServer((req, res) => {
     // Anti-SEO: Blokir mutlak pengindeksan oleh search engine (Google, Bing, dll.)
@@ -106,17 +125,25 @@ async function main() {
       const relPath = cleanUrl.replace(/^\/_next\/static\//, "");
       const filePath = pathModule.join(process.cwd(), ".next/static", relPath);
       if (fsModule.existsSync(filePath) && fsModule.statSync(filePath).isFile()) {
-        return serveStaticFile(res, filePath);
+        return serveStaticFile(req, res, filePath);
       }
     }
 
     // Static assets from public/
     const publicPath = pathModule.join(process.cwd(), "public", cleanUrl.replace(/^\//, ""));
     if (cleanUrl !== "/" && fsModule.existsSync(publicPath) && fsModule.statSync(publicPath).isFile()) {
-      return serveStaticFile(res, publicPath);
+      return serveStaticFile(req, res, publicPath);
     }
 
-    handle(req, res);
+    // Socket.io polling request handling bypass
+    if (cleanUrl.startsWith("/api/socketio")) {
+      return;
+    }
+
+    // Dynamic responses: Compress HTML & API JSON with gzip
+    compressMiddleware(req, res, () => {
+      handle(req, res);
+    });
   });
 
   const io = new SocketIOServer(httpServer, {

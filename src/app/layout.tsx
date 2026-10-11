@@ -56,8 +56,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: "#0055B8",
 };
 
@@ -74,6 +72,17 @@ export default function RootLayout({
         <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
         <meta name="google" content="nositelinkssearchbox" />
         <meta name="google" content="notranslate" />
+
+        {/* Performance Preload LCP Hero Image */}
+        <link
+          rel="preload"
+          as="image"
+          href="/images/samsung-z-flip-5.webp"
+          type="image/webp"
+          fetchPriority="high"
+        />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://images.unsplash.com" />
 
         {/* PWA & Icon Tags */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

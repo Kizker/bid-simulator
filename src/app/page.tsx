@@ -18,9 +18,8 @@ const SessionsScreen = dynamic(
 const CatalogScreen = dynamic(
   () => import("@/components/bidding-plus/CatalogScreen").then((m) => m.CatalogScreen)
 );
-const LiveDetailScreen = dynamic(
-  () => import("@/components/bidding-plus/LiveDetailScreen").then((m) => m.LiveDetailScreen)
-);
+import { LiveDetailScreen } from "@/components/bidding-plus/LiveDetailScreen";
+import { DEFAULT_LOT } from "@/lib/defaultRooms";
 const WinningModal = dynamic(
   () => import("@/components/simulator/WinningModal").then((m) => m.WinningModal)
 );
@@ -58,9 +57,9 @@ function MainAppContent() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>("login");
   const [historyStack, setHistoryStack] = useState<ScreenType[]>(["login"]);
 
-  // Auction data state
-  const [rooms, setRooms] = useState<AuctionRoom[]>([]);
-  const [selectedLot, setSelectedLot] = useState<AuctionRoom | null>(null);
+  // Auction data state - initialized with DEFAULT_LOT for immediate LCP rendering
+  const [rooms, setRooms] = useState<AuctionRoom[]>([DEFAULT_LOT]);
+  const [selectedLot, setSelectedLot] = useState<AuctionRoom | null>(DEFAULT_LOT);
   const [bids, setBids] = useState<Bid[]>([]);
   const [timeRemaining, setTimeRemaining] = useState<number>(45240); // 12h 34m
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -161,11 +160,31 @@ function MainAppContent() {
           syncBrowserHistory(targetScreen, false);
         }
       } else {
-        // Not logged in: remember if user was on register or login
-        const targetScreen = savedScreen === "register" || urlScreen === "register" ? "register" : "login";
-        setCurrentScreen(targetScreen);
-        setHistoryStack([targetScreen]);
-        syncBrowserHistory(targetScreen, false);
+        // Not logged in: allow direct screen access for testing / audit / demo mode
+        if (urlScreen && ["home", "sessions", "catalog", "detail"].includes(urlScreen)) {
+          const demoUser: User = {
+            id: "guest-demo-user",
+            name: "Kamu",
+            phone: "81373827173",
+            email: "demo@enb.co.id",
+            city: "Jakarta",
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+          setCurrentUser(demoUser);
+          setCurrentScreen(urlScreen);
+          setHistoryStack(getDefaultStack(urlScreen));
+          try {
+            localStorage.setItem("bidding_user", JSON.stringify(demoUser));
+            localStorage.setItem("bidding_last_screen", urlScreen);
+          } catch {}
+          syncBrowserHistory(urlScreen, true);
+        } else {
+          const targetScreen = savedScreen === "register" || urlScreen === "register" ? "register" : "login";
+          setCurrentScreen(targetScreen);
+          setHistoryStack([targetScreen]);
+          syncBrowserHistory(targetScreen, false);
+        }
       }
     } catch (e) {
       console.warn("Failed to restore saved user/screen state:", e);
@@ -209,9 +228,16 @@ function MainAppContent() {
   };
 
   useEffect(() => {
-    // Optimasi LCP/FCP: Jangan unduh 336 lot room di layar login sebelum user masuk
+    // Optimasi LCP/FCP: Tunda pengunduhan 336 lot di layar detail room agar gambar & LCP tuntas lebih dulu
     if (currentUser || (currentScreen !== "login" && currentScreen !== "register")) {
-      fetchAllRooms();
+      if (currentScreen === "detail") {
+        const timer = setTimeout(() => {
+          fetchAllRooms();
+        }, 1500);
+        return () => clearTimeout(timer);
+      } else {
+        fetchAllRooms();
+      }
     }
   }, [currentUser, currentScreen]);
 

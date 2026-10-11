@@ -103,19 +103,22 @@ export function SessionsScreen({
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-slate-800 select-none overflow-hidden">
       {/* Solid Blue Header (Matching Screenshot 2) */}
-      <div className="bg-[#0055B8] px-4 py-3.5 flex items-center justify-between text-white shadow-sm shrink-0">
+      <header className="bg-[#0055B8] px-4 py-2.5 flex items-center justify-between text-white shadow-sm shrink-0">
         <button
+          type="button"
           onClick={onBack}
           aria-label="Kembali ke halaman beranda"
-          className="p-1 -ml-1 text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
+          className="w-11 h-11 min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
         >
           <ChevronLeft className="w-6 h-6 stroke-[2.5]" aria-hidden="true" />
         </button>
 
-        <h1 className="text-base font-bold tracking-tight text-white flex-1 text-center pr-6">
+        <h1 className="text-base font-bold tracking-tight text-white flex-1 text-center">
           {categoryTitle}
         </h1>
-      </div>
+
+        <div className="w-11 h-11 -mr-2" aria-hidden="true" />
+      </header>
 
       {/* Main Sessions Card List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -129,13 +132,13 @@ export function SessionsScreen({
               <h2 className="font-bold text-sm text-slate-900">
                 {session.title}
               </h2>
-              <span className="px-2.5 py-0.5 rounded-md text-xs font-bold text-[#15803D] border border-[#15803D] bg-emerald-50">
+              <span className="px-2.5 py-0.5 rounded-md text-xs font-bold text-[#166534] border border-[#166534] bg-emerald-50">
                 {session.status}
               </span>
             </div>
 
             {/* Schedule Times & Total Unit */}
-            <div className="text-xs text-slate-700 space-y-0.5 font-medium">
+            <div className="text-xs text-slate-800 space-y-0.5 font-medium">
               <p>Buka : {session.openTime}</p>
               <p>Tutup : {session.closeTime}</p>
               <p>Total Unit : {session.totalUnits}</p>
@@ -143,9 +146,9 @@ export function SessionsScreen({
 
             {/* Masuk CTA Button */}
             <button
+              type="button"
               onClick={() => onSelectSession(session.id)}
-              aria-label={`Masuk ke sesi lelang ${session.title}`}
-              className="w-full py-2.5 rounded-xl bg-[#0055B8] hover:bg-[#004494] active:scale-[0.99] text-white font-bold text-xs shadow-xs transition cursor-pointer text-center"
+              className="w-full min-h-[44px] py-2.5 rounded-xl bg-[#0055B8] hover:bg-[#004494] active:scale-[0.99] text-white font-bold text-xs shadow-xs transition cursor-pointer flex items-center justify-center"
             >
               Masuk
             </button>

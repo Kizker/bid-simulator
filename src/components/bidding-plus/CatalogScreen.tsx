@@ -164,11 +164,12 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
   return (
     <div className="flex-1 flex flex-col bg-[#F8FAFC] text-slate-800 select-none overflow-hidden relative">
       {/* 1. Solid Blue Header (1:1 with Screenshot) */}
-      <div className="bg-[#0055B8] px-4 py-3.5 flex items-center justify-between text-white shadow-xs shrink-0 z-10">
+      <header className="bg-[#0055B8] px-4 py-2.5 flex items-center justify-between text-white shadow-xs shrink-0 z-10">
         <button
+          type="button"
           onClick={onBack}
-          aria-label="Kembali ke halaman sebelumnya"
-          className="p-1 -ml-1 text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
+          aria-label="Kembali ke halaman sesi lelang"
+          className="w-11 h-11 min-w-[44px] min-h-[44px] -ml-2 flex items-center justify-center text-white hover:bg-white/10 rounded-full transition active:scale-95 cursor-pointer"
         >
           <ChevronLeft className="w-6 h-6 stroke-[2.5]" aria-hidden="true" />
         </button>
@@ -178,14 +179,15 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
         </h1>
 
         <button
+          type="button"
           onClick={() => setIsInfoOpen(true)}
-          className="p-1 -mr-1 text-white hover:bg-white/10 rounded-full transition cursor-pointer"
+          className="w-11 h-11 min-w-[44px] min-h-[44px] -mr-2 flex items-center justify-center text-white hover:bg-white/10 rounded-full transition cursor-pointer"
           aria-label="Informasi panduan Bidding Reguler"
           title="Informasi Bidding Reguler"
         >
           <Info className="w-5 h-5" aria-hidden="true" />
         </button>
-      </div>
+      </header>
 
       {/* 2. Search & Filter Bar Row (1:1 with Screenshot) */}
       <div className="p-4 bg-white border-b border-slate-100 flex items-center gap-3 shrink-0 z-10">
@@ -196,7 +198,7 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari Produk"
             aria-label="Cari Produk Lelang"
-            className="w-full pl-3.5 pr-4 py-2 rounded-lg border border-slate-300 text-xs text-slate-800 placeholder:text-slate-500 outline-none focus:border-[#0055B8]"
+            className="w-full pl-3.5 pr-4 py-2.5 rounded-lg border border-slate-300 text-xs text-slate-800 placeholder:text-slate-500 outline-none focus:border-[#0055B8]"
           />
         </div>
 
@@ -204,7 +206,7 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
           type="button"
           onClick={handleOpenFilter}
           aria-label="Buka opsi filter dan pengurutan produk"
-          className="p-2 rounded-lg text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+          className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
           title="Filter & Urutkan"
         >
           <Menu className="w-5 h-5 stroke-[2.2]" aria-hidden="true" />
@@ -225,7 +227,7 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
               <div className="w-16 h-24 bg-white flex items-center justify-center shrink-0 overflow-hidden">
                 <img
                   src={lot.imageUrl}
-                  alt={lot.title || "Foto Unit Smartphone"}
+                  alt={`${lot.title || "Smartphone"} - Unit Lelang Bidding Reguler`}
                   width="64"
                   height="96"
                   loading="lazy"
@@ -254,7 +256,7 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
                 </div>
 
                 <div className="pt-0.5 flex flex-col text-[11px] text-slate-700">
-                  <span className="text-[#15803D] font-bold">
+                  <span className="text-[#166534] font-bold">
                     {lot.condition || "Fullset"}
                   </span>
                   <span>Stok : {lot.stock || 1}</span>
@@ -264,10 +266,10 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
 
             {/* Bottom Row: Harga Mulai */}
             <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-              <span className="text-slate-700 font-normal">
+              <span className="text-slate-800 font-medium">
                 Harga Mulai
               </span>
-              <span className="font-bold text-sm text-[#0066D6] font-sans">
+              <span className="font-bold text-sm text-[#0055B8] font-sans">
                 IDR {lot.startingPrice.toLocaleString("id-ID")}
               </span>
             </div>
@@ -297,9 +299,10 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
               <button
                 type="button"
                 onClick={() => setIsFilterOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 transition rounded-full cursor-pointer"
+                aria-label="Tutup filter"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-600 hover:text-slate-900 transition rounded-full cursor-pointer"
               >
-                <X className="w-5 h-5 stroke-[2.2]" />
+                <X className="w-5 h-5 stroke-[2.2]" aria-hidden="true" />
               </button>
             </div>
 
@@ -379,7 +382,7 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
             <button
               type="button"
               onClick={handleApplyFilter}
-              className="w-full py-3 bg-[#0066D6] hover:bg-[#0055B8] active:scale-[0.99] text-white font-semibold rounded-xl text-xs shadow-md transition cursor-pointer text-center"
+              className="w-full min-h-[44px] py-3 bg-[#0055B8] hover:bg-[#004494] active:scale-[0.99] text-white font-semibold rounded-xl text-xs shadow-md transition cursor-pointer flex items-center justify-center"
             >
               Terapkan
             </button>
@@ -392,16 +395,18 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
         <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-2xs animate-in fade-in duration-150">
           <div className="w-full max-w-[310px] bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 flex flex-col text-left animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900">Aturan Bidding Reguler</h3>
+              <h2 className="text-sm font-bold text-slate-900">Aturan Bidding Reguler</h2>
               <button
+                type="button"
                 onClick={() => setIsInfoOpen(false)}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                aria-label="Tutup informasi aturan"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] -mr-2 flex items-center justify-center text-slate-600 hover:text-slate-900 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
-            <div className="py-3 space-y-2.5 text-xs text-slate-600">
+            <div className="py-3 space-y-2.5 text-xs text-slate-700">
               <p>
                 • <strong>Kelipatan Bid:</strong> Semua penawaran adalah kelipatan Rp 20.000 (maksimal selisih Rp 420.000).
               </p>
@@ -417,8 +422,9 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
             </div>
 
             <button
+              type="button"
               onClick={() => setIsInfoOpen(false)}
-              className="w-full mt-2 py-2.5 bg-[#0066D6] hover:bg-[#0055B8] text-white font-semibold rounded-xl text-xs transition cursor-pointer"
+              className="w-full min-h-[44px] mt-2 py-2.5 bg-[#0055B8] hover:bg-[#004494] text-white font-semibold rounded-xl text-xs transition cursor-pointer flex items-center justify-center"
             >
               Tutup
             </button>

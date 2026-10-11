@@ -1,0 +1,27 @@
+import type { AuctionRoom } from "@/db/schema";
+
+export const DEFAULT_LOT: AuctionRoom = {
+  id: "lot-1",
+  title: "SAMSUNG GALAXY Z FLIP 5 512GB",
+  subtitle: "Fullset • Grade AD",
+  lotBadge: "AD",
+  condition: "Fullset",
+  stock: 1,
+  specs: "Unit SAMSUNG GALAXY Z FLIP 5 512GB, Grade AD, Kondisi Fullset, Stok 1 unit. Status lelang: Terdaftar.",
+  description: "Unit lelang resmi Bidding Plus grade AD. Kemulusan fisik dan fungsional sesuai standar QC.",
+  category: "Handphone",
+  imageUrl: "/images/samsung-z-flip-5.webp",
+  startingPrice: 8500000,
+  currentPrice: 8500000,
+  bidIncrement: 20000,
+  reservePrice: 9775000,
+  status: "ACTIVE",
+  totalDurationSeconds: 85920,
+  timeRemaining: 85920,
+  antiSnipingSeconds: 15,
+  highestBidderName: null,
+  highestBidderType: null,
+  totalBids: 0,
+  createdAt: 1775836800000,
+  updatedAt: 1775836800000,
+};

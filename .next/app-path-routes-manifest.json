@@ -16,8 +16,8 @@
   "/manifest.webmanifest/route": "/manifest.webmanifest",
   "/robots.txt/route": "/robots.txt",
   "/api/server-time/route": "/api/server-time",
-  "/api/rooms/[id]/route": "/api/rooms/[id]",
   "/page": "/",
   "/simulator/page": "/simulator",
-  "/admin/page": "/admin"
+  "/admin/page": "/admin",
+  "/api/rooms/[id]/route": "/api/rooms/[id]"
 }

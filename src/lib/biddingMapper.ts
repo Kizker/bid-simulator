@@ -25,14 +25,13 @@ export function mapBiddingItemToRoom(item: BiddingItemJson, index: number, now: 
   const specs = `Unit ${title}, Grade ${grade}, Kondisi ${condition}, Stok ${stock} unit. Status lelang: ${item.status || "Terdaftar"}.`;
   const description = `Unit lelang resmi Bidding Plus grade ${grade}. Kemulusan fisik dan fungsional sesuai standar QC.`;
 
-  // Select clean image based on device name
-  let imageUrl = item.imageUrl || "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=600&q=80";
+  let imageUrl = item.imageUrl || "/images/iphone.webp";
   if (title.includes("SAMSUNG") || title.includes("GALAXY") || title.includes("FLIP") || title.includes("FOLD")) {
-    imageUrl = "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=600&q=80";
+    imageUrl = "/images/samsung-z-flip-5.webp";
   } else if (title.includes("IPHONE") || title.includes("APPLE")) {
-    imageUrl = "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=600&q=80";
+    imageUrl = "/images/iphone.webp";
   } else if (title.includes("VIVO") || title.includes("OPPO") || title.includes("XIAOMI")) {
-    imageUrl = "https://images.unsplash.com/photo-1585060544812-6b45742d762f?auto=format&fit=crop&w=600&q=80";
+    imageUrl = "/images/android.webp";
   }
 
   return {
