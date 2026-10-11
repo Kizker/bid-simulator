@@ -45,17 +45,20 @@ RUN corepack enable && corepack prepare pnpm@12.6.0 --activate
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy built application & node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/server.ts ./server.ts
-COPY --from=builder /app/next.config.mjs* ./
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-COPY --from=builder /app/bidding-items.json* ./
+# Copy built application & node_modules with correct ownership
+COPY --chown=nextjs:nodejs --from=builder /app/package.json ./package.json
+COPY --chown=nextjs:nodejs --from=builder /app/pnpm-lock.yaml* ./pnpm-lock.yaml
+COPY --chown=nextjs:nodejs --from=builder /app/pnpm-workspace.yaml* ./pnpm-workspace.yaml
+COPY --chown=nextjs:nodejs --from=builder /app/.npmrc* ./.npmrc
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules ./node_modules
+COPY --chown=nextjs:nodejs --from=builder /app/.next ./.next
+COPY --chown=nextjs:nodejs --from=builder /app/public ./public
+COPY --chown=nextjs:nodejs --from=builder /app/dist ./dist
+COPY --chown=nextjs:nodejs --from=builder /app/src ./src
+COPY --chown=nextjs:nodejs --from=builder /app/server.ts ./server.ts
+COPY --chown=nextjs:nodejs --from=builder /app/next.config.mjs* ./
+COPY --chown=nextjs:nodejs --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --chown=nextjs:nodejs --from=builder /app/bidding-items.json* ./
 
 USER nextjs
 
