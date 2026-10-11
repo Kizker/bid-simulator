@@ -53,6 +53,27 @@ export function CatalogScreen({ rooms, onBack, onSelectLot }: CatalogScreenProps
   // Info Modal state
   const [isInfoOpen, setIsInfoOpen] = useState(false);
 
+  // Tangani tombol kembali HP saat modal info atau bottom sheet filter sedang terbuka
+  React.useEffect(() => {
+    if (!isFilterOpen && !isInfoOpen) return;
+
+    const onPop = () => {
+      setIsFilterOpen(false);
+      setIsInfoOpen(false);
+    };
+
+    if (typeof window !== "undefined") {
+      window.history.pushState({ modalOpen: true }, "", window.location.pathname);
+      window.addEventListener("popstate", onPop);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("popstate", onPop);
+      }
+    };
+  }, [isFilterOpen, isInfoOpen]);
+
   const handleOpenFilter = () => {
     setTempType(selectedType);
     setTempGrade(selectedGrade);

@@ -2,13 +2,13 @@
   "app/page.tsx -> @/components/bidding-plus/CatalogScreen": {
     "id": 600,
     "files": [
-      "static/chunks/600.44883737b6ad150d.js"
+      "static/chunks/600.90ee474b9db5a5b4.js"
     ]
   },
   "app/page.tsx -> @/components/bidding-plus/HomeScreen": {
     "id": 569,
     "files": [
-      "static/chunks/569.5da54a507c64af8d.js"
+      "static/chunks/569.77eee6b9d9d54510.js"
     ]
   },
   "app/page.tsx -> @/components/bidding-plus/LiveDetailScreen": {

@@ -79,6 +79,37 @@ function MainAppContent() {
       .catch(console.error);
   }, []);
 
+  // Sinkronisasi riwayat browser native agar tombol kembali di hardware Android / gesture / browser back
+  // kembali secara bertahap sampai beranda ('home') sebelum keluar dari aplikasi
+  const syncBrowserHistory = (target: ScreenType, isLoggedIn: boolean) => {
+    if (typeof window === "undefined") return;
+
+    try {
+      if (isLoggedIn) {
+        // Entry root selalu beranda
+        window.history.replaceState({ screen: "home" }, "", window.location.pathname);
+
+        if (target === "sessions") {
+          window.history.pushState({ screen: "sessions" }, "", window.location.pathname);
+        } else if (target === "catalog") {
+          window.history.pushState({ screen: "sessions" }, "", window.location.pathname);
+          window.history.pushState({ screen: "catalog" }, "", window.location.pathname);
+        } else if (target === "detail") {
+          window.history.pushState({ screen: "sessions" }, "", window.location.pathname);
+          window.history.pushState({ screen: "catalog" }, "", window.location.pathname);
+          window.history.pushState({ screen: "detail" }, "", window.location.pathname);
+        }
+      } else {
+        window.history.replaceState({ screen: "login" }, "", window.location.pathname);
+        if (target === "register") {
+          window.history.pushState({ screen: "register" }, "", window.location.pathname);
+        }
+      }
+    } catch (e) {
+      console.warn("syncBrowserHistory error:", e);
+    }
+  };
+
   // Restore session and last opened screen on reload
   useEffect(() => {
     try {
@@ -119,22 +150,27 @@ function MainAppContent() {
           try {
             localStorage.setItem("bidding_last_screen", targetScreen);
           } catch {}
+
+          syncBrowserHistory(targetScreen, true);
         } else {
           // Corrupted data, require login
           localStorage.removeItem("bidding_user");
           const targetScreen = savedScreen === "register" || urlScreen === "register" ? "register" : "login";
           setCurrentScreen(targetScreen);
           setHistoryStack([targetScreen]);
+          syncBrowserHistory(targetScreen, false);
         }
       } else {
         // Not logged in: remember if user was on register or login
         const targetScreen = savedScreen === "register" || urlScreen === "register" ? "register" : "login";
         setCurrentScreen(targetScreen);
         setHistoryStack([targetScreen]);
+        syncBrowserHistory(targetScreen, false);
       }
     } catch (e) {
       console.warn("Failed to restore saved user/screen state:", e);
       setCurrentScreen("login");
+      syncBrowserHistory("login", false);
     } finally {
       setIsAuthLoaded(true);
     }
@@ -348,7 +384,7 @@ function MainAppContent() {
     };
   }, [selectedLot?.id, currentScreen]);
 
-  // Navigation handlers with persistence
+  // Navigation handlers with persistence and native browser history integration
   const navigateTo = (next: ScreenType) => {
     setHistoryStack((prev) => {
       const updated = [...prev, next];
@@ -360,42 +396,118 @@ function MainAppContent() {
     setCurrentScreen(next);
     try {
       localStorage.setItem("bidding_last_screen", next);
+      if (typeof window !== "undefined") {
+        window.history.pushState({ screen: next }, "", window.location.pathname);
+      }
     } catch {}
   };
 
-  const handleBack = () => {
-    if (historyStack.length > 1) {
-      const newStack = [...historyStack];
-      newStack.pop();
-      const prev = newStack[newStack.length - 1];
+  // Handler event popstate: menangkap tombol kembali mobile Android (hardware & gesture) dan tombol back browser web
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-      // If user is logged in, going back should never trap into login/register
-      if (currentUser && (prev === "login" || prev === "register")) {
-        setHistoryStack(["home"]);
-        setCurrentScreen("home");
+    const onPopState = (event: PopStateEvent) => {
+      // 1. Jika ada modal konfirmasi bid atau modal kemenangan yang sedang buka, tutup modal saja
+      if (showWinningModal) {
+        setShowWinningModal(false);
         try {
-          localStorage.setItem("bidding_last_screen", "home");
-          localStorage.setItem("bidding_history_stack", JSON.stringify(["home"]));
+          window.history.pushState({ screen: currentScreen }, "", window.location.pathname);
+        } catch {}
+        return;
+      }
+      if (bidModal) {
+        setBidModal(null);
+        try {
+          window.history.pushState({ screen: currentScreen }, "", window.location.pathname);
         } catch {}
         return;
       }
 
-      setHistoryStack(newStack);
-      setCurrentScreen(prev);
-      try {
-        localStorage.setItem("bidding_last_screen", prev);
-        localStorage.setItem("bidding_history_stack", JSON.stringify(newStack));
-      } catch {}
+      // 2. Baca target layar dari event.state
+      const stateScreen = event.state?.screen as ScreenType | undefined;
+
+      if (stateScreen) {
+        setCurrentScreen(stateScreen);
+        try {
+          localStorage.setItem("bidding_last_screen", stateScreen);
+        } catch {}
+
+        setHistoryStack((prev) => {
+          const idx = prev.lastIndexOf(stateScreen);
+          if (idx !== -1) {
+            const sliced = prev.slice(0, idx + 1);
+            try {
+              localStorage.setItem("bidding_history_stack", JSON.stringify(sliced));
+            } catch {}
+            return sliced;
+          }
+          const defaultStack = getDefaultStack(stateScreen);
+          try {
+            localStorage.setItem("bidding_history_stack", JSON.stringify(defaultStack));
+          } catch {}
+          return defaultStack;
+        });
+      } else {
+        // Jika history browser mundur sampai titik awal (state null):
+        if (currentUser) {
+          if (currentScreen !== "home") {
+            // Belum di beranda ('home'): arahkan ke beranda dulu, jangan langsung keluar!
+            setCurrentScreen("home");
+            setHistoryStack(["home"]);
+            try {
+              localStorage.setItem("bidding_last_screen", "home");
+              localStorage.setItem("bidding_history_stack", JSON.stringify(["home"]));
+              window.history.replaceState({ screen: "home" }, "", window.location.pathname);
+            } catch {}
+          } else {
+            // Sudah di beranda: biarkan browser keluar dari aplikasi secara native
+          }
+        } else {
+          if (currentScreen === "register") {
+            setCurrentScreen("login");
+            setHistoryStack(["login"]);
+            try {
+              localStorage.setItem("bidding_last_screen", "login");
+              localStorage.setItem("bidding_history_stack", JSON.stringify(["login"]));
+              window.history.replaceState({ screen: "login" }, "", window.location.pathname);
+            } catch {}
+          }
+        }
+      }
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, [currentScreen, currentUser, showWinningModal, bidModal]);
+
+  const handleBack = () => {
+    // 1. Jika ada modal aktif, tutup modal dulu
+    if (showWinningModal) {
+      setShowWinningModal(false);
+      return;
+    }
+    if (bidModal) {
+      setBidModal(null);
+      return;
+    }
+
+    // 2. Jika sudah di beranda (atau di login), jangan mundur lagi
+    if (currentScreen === "home" || (!currentUser && currentScreen === "login")) {
+      return;
+    }
+
+    // 3. Gunakan window.history.back() agar tersinkronisasi 100% dengan riwayat browser
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      window.history.back();
     } else {
+      // Fallback internal jika riwayat browser tidak tersedia
       let prev: ScreenType = "home";
       if (currentScreen === "detail") prev = "catalog";
       else if (currentScreen === "catalog") prev = "sessions";
       else if (currentScreen === "sessions") prev = "home";
-      else if (currentScreen === "home") {
-        return;
-      } else if (currentScreen === "register") {
-        prev = "login";
-      }
+      else if (currentScreen === "register") prev = "login";
 
       setCurrentScreen(prev);
       try {
@@ -447,6 +559,9 @@ function MainAppContent() {
       localStorage.removeItem("bidding_home_tab");
       localStorage.setItem("bidding_last_screen", "login");
       localStorage.setItem("bidding_history_stack", JSON.stringify(["login"]));
+      if (typeof window !== "undefined") {
+        window.history.replaceState({ screen: "login" }, "", window.location.pathname);
+      }
     } catch {}
     setHistoryStack(["login"]);
     setCurrentScreen("login");
@@ -459,6 +574,9 @@ function MainAppContent() {
       localStorage.setItem("bidding_user", JSON.stringify(user));
       localStorage.setItem("bidding_last_screen", "home");
       localStorage.setItem("bidding_history_stack", JSON.stringify(["home"]));
+      if (typeof window !== "undefined") {
+        window.history.replaceState({ screen: "home" }, "", window.location.pathname);
+      }
     } catch {}
     setHistoryStack(["home"]);
     setCurrentScreen("home");

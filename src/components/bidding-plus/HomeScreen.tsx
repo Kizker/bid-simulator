@@ -51,6 +51,26 @@ export function HomeScreen({ user, onSelectCategory, onLogout }: HomeScreenProps
   // State for sub-modals (Detail Data Akun, S&K, etc.)
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
+  // Tangani tombol kembali HP saat modal profil atau info di HomeScreen sedang terbuka
+  useEffect(() => {
+    if (!activeModal) return;
+
+    const onPop = () => {
+      setActiveModal(null);
+    };
+
+    if (typeof window !== "undefined") {
+      window.history.pushState({ modalOpen: true }, "", window.location.pathname);
+      window.addEventListener("popstate", onPop);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("popstate", onPop);
+      }
+    };
+  }, [activeModal]);
+
   // Dynamic schedule displayed to public (hours and minutes only)
   const [publicSchedule, setPublicSchedule] = useState<string>("17.00 s/d 08.00 wib");
 
