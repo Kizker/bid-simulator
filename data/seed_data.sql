@@ -11,9 +11,10 @@ TRUNCATE TABLE users CASCADE;
 TRUNCATE TABLE bot_profiles CASCADE;
 TRUNCATE TABLE app_settings CASCADE;
 
--- Users (1)
+-- Users (2)
 INSERT INTO users (id, name, phone, email, city, created_at, updated_at) VALUES
-('usr-demo-1', 'Menik Sri Rejeki', '81373827173', 'menikbda@gmail.com', 'Jakarta', '1791679801795', '1791679801795');
+('usr-demo-1', 'Menik Sri Rejeki', '81373827173', 'menikbda@gmail.com', 'Jakarta', '1791679801795', '1791679801795'),
+('usr-user-1', 'User Bidding', '88747378869', 'user@bidsim.my.id', 'Jakarta', '1791679801795', '1791679801795');
 
 -- Bot Profiles (7)
 INSERT INTO bot_profiles (id, name, personality, avatar_url, min_delay_sec, max_delay_sec, max_budget, is_active, created_at, updated_at) VALUES

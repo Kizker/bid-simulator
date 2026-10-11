@@ -27,20 +27,25 @@ export async function POST(req: Request) {
     }
 
     // Find user by phone number
-    const [user] = await db
+    let [user] = await db
       .select()
       .from(users)
       .where(eq(users.phone, normalizedPhone));
 
     if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          isRegistered: false,
-          error: "Nomor handphone belum terdaftar. Silakan daftar akun baru terlebih dahulu.",
-        },
-        { status: 404 }
-      );
+      // Auto-register pengguna baru agar siapa pun langsung bisa mencoba simulator tanpa terhalang
+      const now = Date.now();
+      const newUser: typeof users.$inferInsert = {
+        id: `usr-${now}-${Math.random().toString(36).substring(2, 7)}`,
+        name: `Peserta Lelang (${normalizedPhone.slice(-4)})`,
+        phone: normalizedPhone,
+        email: `peserta_${normalizedPhone}@bidsim.local`,
+        city: "Jakarta",
+        createdAt: now,
+        updatedAt: now,
+      };
+      await db.insert(users).values(newUser);
+      user = newUser as any;
     }
 
     return NextResponse.json({
