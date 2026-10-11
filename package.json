@@ -9,6 +9,7 @@
     "start": "cross-env NODE_ENV=production node dist/server.cjs",
     "seed": "tsx src/db/seed.ts",
     "import-items": "tsx src/scripts/import_bidding_items.ts",
+    "import-dump": "tsx src/scripts/seed_live.ts",
     "lint": "eslint"
   },
   "dependencies": {
