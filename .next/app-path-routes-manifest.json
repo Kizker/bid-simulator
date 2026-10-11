@@ -13,10 +13,11 @@
   "/api/schedule/route": "/api/schedule",
   "/api/users/route": "/api/users",
   "/favicon.ico/route": "/favicon.ico",
+  "/manifest.webmanifest/route": "/manifest.webmanifest",
   "/robots.txt/route": "/robots.txt",
+  "/api/rooms/[id]/route": "/api/rooms/[id]",
   "/api/server-time/route": "/api/server-time",
   "/page": "/",
   "/simulator/page": "/simulator",
-  "/admin/page": "/admin",
-  "/api/rooms/[id]/route": "/api/rooms/[id]"
+  "/admin/page": "/admin"
 }

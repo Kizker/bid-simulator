@@ -734,13 +734,16 @@ export default function AdminPage() {
       if (data.success) {
         setIsResetModalOpen(false);
         if (mode === "delete_all") {
+          sendGlobalCommand("RESET_ALL");
           setRooms([]);
           setSelectedRoomId("");
           setSelectedRoom(null);
           setRecentBids([]);
           showNotice("Seluruh daftar unit lelang berhasil dihapus dan dikosongkan.");
         } else {
-          showNotice("Daftar unit lelang berhasil di-reset ke harga awal (open bid).");
+          // Emit socket command to notify all connected clients immediately
+          sendGlobalCommand("RESET_ALL");
+          showNotice("Semua penawaran unit berhasil di-reset kembali ke harga awal (Open Bid).");
           await fetchRooms();
           if (selectedRoomId) {
             fetch(`/api/rooms/${selectedRoomId}`)
@@ -1293,9 +1296,18 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Status Indicator for Control view */}
+            {/* Status & Actions for Control view */}
             {activeNav === "control" && (
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsResetModalOpen(true)}
+                  disabled={isResettingUnits}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-800 transition active:scale-95 shadow-2xs cursor-pointer disabled:opacity-50"
+                  title="Reset penawaran seluruh unit lelang ke harga awal (Open Bid)"
+                >
+                  <RotateCcw className={`w-3.5 h-3.5 text-amber-700 ${isResettingUnits ? "animate-spin" : ""}`} />
+                  <span>Reset Semua Tawaran</span>
+                </button>
                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${
                   globalBotEnabled
                     ? "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -1689,8 +1701,8 @@ export default function AdminPage() {
 
                 {/* KONTROL TERPADU: BOT & JADWAL OPERASIONAL */}
                 <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  {/* Bagian Kiri: Tombol & Status Bot */}
-                  <div className="flex items-center gap-3">
+                  {/* Bagian Kiri: Tombol & Status Bot + Aksi Reset Tawaran */}
+                  <div className="flex flex-wrap items-center gap-3">
                     {globalBotEnabled ? (
                       <button
                         onClick={() => {
@@ -1728,6 +1740,19 @@ export default function AdminPage() {
                       <span className="font-bold text-slate-800">
                         {globalBotEnabled ? "Bot Aktif" : "Bot Dijeda"}
                       </span>
+                    </div>
+
+                    {/* Tombol Aksi Cepat: Reset Tawaran Semua Unit ke Open Bid */}
+                    <div className="pl-2 border-l border-slate-200">
+                      <button
+                        onClick={() => setIsResetModalOpen(true)}
+                        disabled={isResettingUnits}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold text-xs bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs transition active:scale-95 cursor-pointer disabled:opacity-50"
+                        title="Reset semua penawaran unit agar kembali ke harga mulai (Open Bid)"
+                      >
+                        <RotateCcw className={`w-3.5 h-3.5 text-amber-700 ${isResettingUnits ? "animate-spin" : ""}`} />
+                        <span>Reset Tawaran ke Open Bid</span>
+                      </button>
                     </div>
                   </div>
 
@@ -3329,26 +3354,56 @@ export default function AdminPage() {
             </p>
 
             <div className="space-y-3 pt-1">
-              {/* Opsi 1: Kosongkan & Hapus Semua Unit */}
-              <div className="p-4 rounded-2xl border-2 border-rose-200/80 bg-rose-50/30 hover:bg-rose-50/60 transition space-y-2.5">
+              {/* Opsi 1 (UTAMA & REKOMENDASI): Reset Harga Tawaran ke Open Bid */}
+              <div className="p-4 rounded-2xl border-2 border-blue-200/90 bg-blue-50/40 hover:bg-blue-50/70 transition space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <RotateCcw className="w-4 h-4 text-[#0066D6]" />
+                    <span className="text-xs font-bold text-slate-900">
+                      Reset Semua Tawaran ke Harga Mulai (Open Bid)
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#0066D6] text-white">
+                    Rekomendasi
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Pertahankan semua <strong>{rooms.length} unit lelang</strong>, kembalikan harga penawaran saat ini ke harga awal (open bid), bersihkan seluruh histori penawaran, dan reset status penawar tertinggi. Unit langsung siap disimulasikan kembali secara live.
+                </p>
+                <button
+                  onClick={() => handleResetUnits("reset_prices")}
+                  disabled={isResettingUnits}
+                  className="w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-[#0066D6] hover:bg-[#0052B3] active:scale-[0.99] text-white transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {isResettingUnits ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  )}
+                  <span>Eksekusi Reset ke Open Bid ({rooms.length} Unit)</span>
+                </button>
+              </div>
+
+              {/* Opsi 2 (DESTRUKTIF): Kosongkan & Hapus Semua Unit */}
+              <div className="p-4 rounded-2xl border border-rose-200/80 bg-rose-50/30 hover:bg-rose-50/60 transition space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Trash2 className="w-4 h-4 text-rose-600" />
                     <span className="text-xs font-bold text-slate-900">
-                      Hapus &amp; Kosongkan Semua Unit
+                      Kosongkan &amp; Hapus Semua Unit
                     </span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
-                    0 Unit
+                    Hapus Total (0 Unit)
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Menghapus seluruh <strong>{rooms.length} unit</strong> dan semua riwayat penawaran dari sistem sampai bersih (0 unit). Anda dapat mengimpor data kembali melalui menu <em>Import Data JSON</em> kapan saja.
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Menghapus seluruh <strong>{rooms.length} unit</strong> dari database sampai 0 unit. Hanya gunakan jika Anda ingin mengimpor ulang data baru dari JSON.
                 </p>
                 <button
                   onClick={() => handleResetUnits("delete_all")}
                   disabled={isResettingUnits}
-                  className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 active:scale-[0.99] text-white transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                  className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-white border border-rose-300 hover:bg-rose-600 hover:text-white active:scale-[0.99] text-rose-700 transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
                 >
                   {isResettingUnits ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -3356,36 +3411,6 @@ export default function AdminPage() {
                     <Trash2 className="w-3.5 h-3.5" />
                   )}
                   <span>Kosongkan &amp; Hapus Semua Unit</span>
-                </button>
-              </div>
-
-              {/* Opsi 2: Reset Harga Tawaran ke Open Bid Saja */}
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <RotateCcw className="w-4 h-4 text-[#0066D6]" />
-                    <span className="text-xs font-bold text-slate-900">
-                      Reset Tawaran ke Open Bid Saja
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#0066D6]">
-                    Pertahankan Unit
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Pertahankan semua <strong>{rooms.length} unit lelang</strong>, namun kembalikan harga penawaran saat ini ke harga awal (open bid) dan hapus seluruh histori penawaran.
-                </p>
-                <button
-                  onClick={() => handleResetUnits("reset_prices")}
-                  disabled={isResettingUnits}
-                  className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-white border border-slate-300 hover:bg-slate-100 active:scale-[0.99] text-slate-700 transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
-                >
-                  {isResettingUnits ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  )}
-                  <span>Reset Tawaran ke Open Bid</span>
                 </button>
               </div>
             </div>

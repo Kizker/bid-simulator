@@ -19,8 +19,25 @@ const monoFont = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BidPulse — Live Auction Simulator & CMS",
+  title: "Bidding Plus — Live Auction Simulator & CMS",
   description: "Web-based real-time mobile bid simulator with admin CMS controller and automated AI bidding bots.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Bidding Plus",
+  },
   robots: {
     index: false,
     follow: false,
@@ -41,6 +58,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#0055B8",
 };
 
 export default function RootLayout({
@@ -56,6 +74,16 @@ export default function RootLayout({
         <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
         <meta name="google" content="nositelinkssearchbox" />
         <meta name="google" content="notranslate" />
+
+        {/* PWA & Icon Tags */}
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0055B8" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="min-h-full bg-[#090D16] text-[#F1F5F9] font-sans flex flex-col selection:bg-amber-500 selection:text-black">
         {children}

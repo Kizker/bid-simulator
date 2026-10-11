@@ -685,15 +685,44 @@ var SimulationEngine = class {
     this.emit("all_rooms_paused", {});
     this.emit("all_configs_updated", { botEnabled: 0 });
   }
-  resetAllRooms() {
-    for (const [roomId, state] of this.rooms) {
-      state.config.botEnabled = 0;
-      state.nextBotBidAt = void 0;
-      this.resetRoom(roomId);
+  async resetAllRoomsToOpenBid() {
+    try {
+      await db.delete(bids);
+      await db.update(auctionRooms).set({
+        currentPrice: import_drizzle_orm.sql`starting_price`,
+        highestBidderName: null,
+        highestBidderType: null,
+        totalBids: 0,
+        status: "ACTIVE",
+        timeRemaining: import_drizzle_orm.sql`total_duration_seconds`,
+        updatedAt: Date.now()
+      });
+      for (const [roomId, state] of this.rooms) {
+        if (state.timerInterval) {
+          clearInterval(state.timerInterval);
+          state.timerInterval = void 0;
+        }
+        state.room.currentPrice = state.room.startingPrice;
+        state.room.highestBidderName = null;
+        state.room.highestBidderType = null;
+        state.room.totalBids = 0;
+        state.room.status = "ACTIVE";
+        state.room.timeRemaining = state.room.totalDurationSeconds || 36e3;
+        state.recentBids = [];
+        state.nextBotBidAt = void 0;
+        this.emit("room_updated", state.room);
+        this.emit("bids_cleared", { roomId });
+      }
+      this.startMasterTicker();
+      this.emit("all_rooms_reset", { timestamp: Date.now() });
+      console.log(`\u2705 [Engine] Successfully reset all ${this.rooms.size} rooms to starting prices.`);
+    } catch (err) {
+      console.error("[Engine] Failed to reset all rooms to open bid:", err);
+      throw err;
     }
-    db.update(simulationConfigs).set({ botEnabled: 0 }).execute().catch(console.error);
-    this.emit("all_rooms_reset", {});
-    this.emit("all_configs_updated", { botEnabled: 0 });
+  }
+  resetAllRooms() {
+    this.resetAllRoomsToOpenBid().catch(console.error);
   }
   addTimeToAllRooms(extraSeconds) {
     for (const [roomId, state] of this.rooms) {
@@ -1037,6 +1066,10 @@ function initSocketServer(io, engine) {
         io.emit("all_bots_started", payload);
         break;
       }
+      case "all_rooms_reset": {
+        io.emit("all_rooms_reset", payload);
+        break;
+      }
     }
   });
   io.on("connection", (socket) => {
@@ -1123,7 +1156,7 @@ function initSocketServer(io, engine) {
             break;
           case "RESET":
           case "RESET_ALL":
-            engine.resetAllRooms();
+            await engine.resetAllRoomsToOpenBid();
             break;
           case "END_ALL":
             engine.endAllRooms();

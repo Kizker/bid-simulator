@@ -232,8 +232,12 @@ function MainAppContent() {
         }
 
         // Jangan auto-update harga/penawar tertinggi di dalam room jika bukan penawaran user sendiri
-        // Hanya update jika user sendiri atau jika room status diubah (PAUSED / UPCOMING / RESET)
-        if (updated.highestBidderType === "USER" || updated.status !== "ACTIVE") {
+        // Hanya update jika user sendiri atau jika room status diubah (PAUSED / UPCOMING / RESET / totalBids === 0)
+        if (
+          updated.highestBidderType === "USER" ||
+          updated.status !== "ACTIVE" ||
+          updated.totalBids === 0
+        ) {
           setSelectedLot(updated);
           setTimeRemaining(updated.timeRemaining);
         }
@@ -244,7 +248,24 @@ function MainAppContent() {
       if (data.roomId === selectedLot?.id) {
         setBids([]);
         setShowWinningModal(false);
+        setSelectedLot((prev) =>
+          prev
+            ? {
+                ...prev,
+                currentPrice: prev.startingPrice,
+                totalBids: 0,
+                highestBidderName: null,
+                highestBidderType: null,
+              }
+            : null
+        );
       }
+    });
+
+    socket.on("all_rooms_reset", () => {
+      setBids([]);
+      setShowWinningModal(false);
+      fetchAllRooms();
     });
 
     socket.on("auction_ended", (data: { roomId: string }) => {

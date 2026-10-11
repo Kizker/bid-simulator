@@ -6,32 +6,19 @@ import { sql } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
-    let mode = "delete_all"; // default to deleting all units as requested by user
+    let mode = "reset_prices"; // Safe default: reset prices to open bid
     try {
       const body = await req.json();
       if (body?.mode) {
         mode = body.mode;
       }
     } catch {
-      // no body or plain POST -> default delete_all
+      // no body -> default to reset_prices
     }
 
     if (mode === "reset_prices") {
-      // 1. Delete all bids
-      await db.delete(bids);
-
-      // 2. Reset prices and timers to starting prices
-      await db.update(auctionRooms).set({
-        currentPrice: sql`starting_price`,
-        highestBidderName: null,
-        highestBidderType: null,
-        totalBids: 0,
-        timeRemaining: sql`total_duration_seconds`,
-        status: "ACTIVE",
-      });
-
-      // 3. Reload in-memory engine
-      await simulationEngine.reloadFromDatabase();
+      // Execute atomic reset to open bid and notify all clients via socket
+      await simulationEngine.resetAllRoomsToOpenBid();
 
       return NextResponse.json({
         success: true,

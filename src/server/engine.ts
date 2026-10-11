@@ -10,7 +10,7 @@ import {
   type SimulationConfig,
   type BotProfile,
 } from "../db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface RoomRuntimeState {
   room: AuctionRoom;
@@ -528,15 +528,52 @@ export class SimulationEngine {
     this.emit("all_configs_updated", { botEnabled: 0 });
   }
 
-  public resetAllRooms() {
-    for (const [roomId, state] of this.rooms) {
-      state.config.botEnabled = 0;
-      state.nextBotBidAt = undefined;
-      this.resetRoom(roomId);
+  public async resetAllRoomsToOpenBid() {
+    try {
+      // 1. Bulk delete all bids from database in one query
+      await db.delete(bids);
+
+      // 2. Bulk update all auction rooms in database to starting price
+      await db.update(auctionRooms).set({
+        currentPrice: sql`starting_price`,
+        highestBidderName: null,
+        highestBidderType: null,
+        totalBids: 0,
+        status: "ACTIVE",
+        timeRemaining: sql`total_duration_seconds`,
+        updatedAt: Date.now(),
+      });
+
+      // 3. Update all in-memory room states and emit events
+      for (const [roomId, state] of this.rooms) {
+        if (state.timerInterval) {
+          clearInterval(state.timerInterval);
+          state.timerInterval = undefined;
+        }
+        state.room.currentPrice = state.room.startingPrice;
+        state.room.highestBidderName = null;
+        state.room.highestBidderType = null;
+        state.room.totalBids = 0;
+        state.room.status = "ACTIVE";
+        state.room.timeRemaining = state.room.totalDurationSeconds || 36000;
+        state.recentBids = [];
+        state.nextBotBidAt = undefined;
+
+        this.emit("room_updated", state.room);
+        this.emit("bids_cleared", { roomId });
+      }
+
+      this.startMasterTicker();
+      this.emit("all_rooms_reset", { timestamp: Date.now() });
+      console.log(`✅ [Engine] Successfully reset all ${this.rooms.size} rooms to starting prices.`);
+    } catch (err) {
+      console.error("[Engine] Failed to reset all rooms to open bid:", err);
+      throw err;
     }
-    db.update(simulationConfigs).set({ botEnabled: 0 }).execute().catch(console.error);
-    this.emit("all_rooms_reset", {});
-    this.emit("all_configs_updated", { botEnabled: 0 });
+  }
+
+  public resetAllRooms() {
+    this.resetAllRoomsToOpenBid().catch(console.error);
   }
 
   public addTimeToAllRooms(extraSeconds: number) {

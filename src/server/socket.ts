@@ -74,6 +74,10 @@ export function initSocketServer(io: SocketIOServer, engine: SimulationEngine) {
         io.emit("all_bots_started", payload);
         break;
       }
+      case "all_rooms_reset": {
+        io.emit("all_rooms_reset", payload);
+        break;
+      }
     }
   });
 
@@ -177,7 +181,7 @@ export function initSocketServer(io: SocketIOServer, engine: SimulationEngine) {
             break;
           case "RESET":
           case "RESET_ALL":
-            engine.resetAllRooms();
+            await engine.resetAllRoomsToOpenBid();
             break;
           case "END_ALL":
             engine.endAllRooms();

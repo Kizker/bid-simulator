@@ -13,10 +13,11 @@
   "/api/schedule/route": "app/api/schedule/route.js",
   "/api/users/route": "app/api/users/route.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
   "/robots.txt/route": "app/robots.txt/route.js",
+  "/api/rooms/[id]/route": "app/api/rooms/[id]/route.js",
   "/api/server-time/route": "app/api/server-time/route.js",
   "/page": "app/page.js",
   "/simulator/page": "app/simulator/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/api/rooms/[id]/route": "app/api/rooms/[id]/route.js"
+  "/admin/page": "app/admin/page.js"
 }
