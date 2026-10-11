@@ -1,4 +1,40 @@
 services:
+  # 1. PostgreSQL Database (ACID, Row-Level Lock, High Concurrency)
+  postgres:
+    image: postgres:16-alpine
+    container_name: bid-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bid_simulator
+      POSTGRES_USER: bid_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-bid_secure_pass123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bid_user -d bid_simulator"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bid-network
+
+  # 2. Redis (In-Memory Hot Data, Atomic Lock & Socket.IO Clustering Adapter)
+  redis:
+    image: redis:7-alpine
+    container_name: bid-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_secure_pass123}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_secure_pass123}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bid-network
+
+  # 3. Next.js App + Socket.IO Auction Engine
   bid-simulator:
     build:
       context: .
@@ -6,20 +42,35 @@ services:
     container_name: bid-simulator
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${HOST_PORT:-3030}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
-      - DATABASE_URL=file:/app/data/simulator.db
-      - NEXT_PUBLIC_ADMIN_USER=admin
-      - ADMIN_PASSWORD=admin123
-    volumes:
-      # Persistent volume for SQLite database storage
-      - ./data:/app/data
+      - DATABASE_URL=postgres://bid_user:${DB_PASSWORD:-bid_secure_pass123}@postgres:5432/bid_simulator
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-redis_secure_pass123}@redis:6379
+      - NEXT_PUBLIC_ADMIN_USER=${NEXT_PUBLIC_ADMIN_USER:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/server-time || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
+      start_period: 25s
+    networks:
+      - bid-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  bid-network:
+    driver: bridge

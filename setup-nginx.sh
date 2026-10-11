@@ -139,6 +139,6 @@ curl -s -Iv https://bidsim.labtry.my.id/admin 2>&1 | grep -E "(CN=|HTTP\/|< HTTP
 echo "============================================================"
 echo "🎉 SELESAI! Silakan buka di browser Anda:"
 echo "👉 https://bidsim.labtry.my.id/admin"
-echo "👉 https://bidsim.labtry.my.id/simulator"
+echo "👉 https://bidsim.labtry.my.id"
 
 

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { client } from "@/db";
+import { db } from "@/db";
+import { bids, simulationConfigs, auctionRooms } from "@/db/schema";
 import { simulationEngine } from "@/server/engine";
+import { sql } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
@@ -16,18 +18,17 @@ export async function POST(req: Request) {
 
     if (mode === "reset_prices") {
       // 1. Delete all bids
-      await client.execute("DELETE FROM bids");
+      await db.delete(bids);
 
       // 2. Reset prices and timers to starting prices
-      await client.execute(`
-        UPDATE auction_rooms
-        SET current_price = starting_price,
-            highest_bidder_name = NULL,
-            highest_bidder_type = NULL,
-            total_bids = 0,
-            time_remaining = total_duration_seconds,
-            status = 'ACTIVE'
-      `);
+      await db.update(auctionRooms).set({
+        currentPrice: sql`starting_price`,
+        highestBidderName: null,
+        highestBidderType: null,
+        totalBids: 0,
+        timeRemaining: sql`total_duration_seconds`,
+        status: "ACTIVE",
+      });
 
       // 3. Reload in-memory engine
       await simulationEngine.reloadFromDatabase();
@@ -40,9 +41,9 @@ export async function POST(req: Request) {
     }
 
     // Default: "delete_all" -> Purge ALL units and bids completely (0 units)
-    await client.execute("DELETE FROM bids");
-    await client.execute("DELETE FROM simulation_configs");
-    await client.execute("DELETE FROM auction_rooms");
+    await db.delete(bids);
+    await db.delete(simulationConfigs);
+    await db.delete(auctionRooms);
 
     // Clear simulation engine
     simulationEngine.clearAllRooms();

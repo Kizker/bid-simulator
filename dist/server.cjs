@@ -32,8 +32,8 @@ var import_next = __toESM(require("next"));
 var import_socket = require("socket.io");
 
 // src/db/index.ts
-var import_client = require("@libsql/client");
-var import_libsql = require("drizzle-orm/libsql");
+var import_postgres_js = require("drizzle-orm/postgres-js");
+var import_postgres = __toESM(require("postgres"));
 
 // src/db/schema.ts
 var schema_exports = {};
@@ -45,101 +45,104 @@ __export(schema_exports, {
   simulationConfigs: () => simulationConfigs,
   users: () => users
 });
-var import_sqlite_core = require("drizzle-orm/sqlite-core");
-var auctionRooms = (0, import_sqlite_core.sqliteTable)("auction_rooms", {
-  id: (0, import_sqlite_core.text)("id").primaryKey(),
-  title: (0, import_sqlite_core.text)("title").notNull(),
-  description: (0, import_sqlite_core.text)("description").notNull(),
-  category: (0, import_sqlite_core.text)("category").notNull().default("Handphone"),
-  subtitle: (0, import_sqlite_core.text)("subtitle").notNull().default(""),
-  lotBadge: (0, import_sqlite_core.text)("lot_badge").notNull().default("(AD) STANDART"),
-  condition: (0, import_sqlite_core.text)("condition").notNull().default("Fullset"),
-  stock: (0, import_sqlite_core.integer)("stock").notNull().default(1),
-  specs: (0, import_sqlite_core.text)("specs").notNull().default(""),
-  imageUrl: (0, import_sqlite_core.text)("image_url").notNull(),
-  startingPrice: (0, import_sqlite_core.integer)("starting_price").notNull(),
-  currentPrice: (0, import_sqlite_core.integer)("current_price").notNull(),
-  bidIncrement: (0, import_sqlite_core.integer)("bid_increment").notNull().default(2e4),
-  reservePrice: (0, import_sqlite_core.integer)("reserve_price").notNull().default(0),
-  status: (0, import_sqlite_core.text)("status", { enum: ["DRAFT", "UPCOMING", "ACTIVE", "PAUSED", "ENDED"] }).notNull().default("ACTIVE"),
-  totalDurationSeconds: (0, import_sqlite_core.integer)("total_duration_seconds").notNull().default(45240),
+var import_pg_core = require("drizzle-orm/pg-core");
+var auctionRooms = (0, import_pg_core.pgTable)("auction_rooms", {
+  id: (0, import_pg_core.text)("id").primaryKey(),
+  title: (0, import_pg_core.text)("title").notNull(),
+  description: (0, import_pg_core.text)("description").notNull(),
+  category: (0, import_pg_core.text)("category").notNull().default("Handphone"),
+  subtitle: (0, import_pg_core.text)("subtitle").notNull().default(""),
+  lotBadge: (0, import_pg_core.text)("lot_badge").notNull().default("(AD) STANDART"),
+  condition: (0, import_pg_core.text)("condition").notNull().default("Fullset"),
+  stock: (0, import_pg_core.integer)("stock").notNull().default(1),
+  specs: (0, import_pg_core.text)("specs").notNull().default(""),
+  imageUrl: (0, import_pg_core.text)("image_url").notNull(),
+  startingPrice: (0, import_pg_core.bigint)("starting_price", { mode: "number" }).notNull(),
+  currentPrice: (0, import_pg_core.bigint)("current_price", { mode: "number" }).notNull(),
+  bidIncrement: (0, import_pg_core.integer)("bid_increment").notNull().default(2e4),
+  reservePrice: (0, import_pg_core.bigint)("reserve_price", { mode: "number" }).notNull().default(0),
+  status: (0, import_pg_core.text)("status", { enum: ["DRAFT", "UPCOMING", "ACTIVE", "PAUSED", "ENDED"] }).notNull().default("ACTIVE"),
+  totalDurationSeconds: (0, import_pg_core.integer)("total_duration_seconds").notNull().default(45240),
   // 12h 34m
-  timeRemaining: (0, import_sqlite_core.integer)("time_remaining").notNull().default(45240),
-  antiSnipingSeconds: (0, import_sqlite_core.integer)("anti_sniping_seconds").notNull().default(15),
-  highestBidderName: (0, import_sqlite_core.text)("highest_bidder_name"),
-  highestBidderType: (0, import_sqlite_core.text)("highest_bidder_type", { enum: ["USER", "BOT"] }),
-  totalBids: (0, import_sqlite_core.integer)("total_bids").notNull().default(0),
-  createdAt: (0, import_sqlite_core.integer)("created_at").notNull(),
-  updatedAt: (0, import_sqlite_core.integer)("updated_at").notNull()
+  timeRemaining: (0, import_pg_core.integer)("time_remaining").notNull().default(45240),
+  antiSnipingSeconds: (0, import_pg_core.integer)("anti_sniping_seconds").notNull().default(15),
+  highestBidderName: (0, import_pg_core.text)("highest_bidder_name"),
+  highestBidderType: (0, import_pg_core.text)("highest_bidder_type", { enum: ["USER", "BOT"] }),
+  totalBids: (0, import_pg_core.integer)("total_bids").notNull().default(0),
+  createdAt: (0, import_pg_core.bigint)("created_at", { mode: "number" }).notNull(),
+  updatedAt: (0, import_pg_core.bigint)("updated_at", { mode: "number" }).notNull()
 });
-var bids = (0, import_sqlite_core.sqliteTable)("bids", {
-  id: (0, import_sqlite_core.text)("id").primaryKey(),
-  roomId: (0, import_sqlite_core.text)("room_id").notNull().references(() => auctionRooms.id, { onDelete: "cascade" }),
-  bidderName: (0, import_sqlite_core.text)("bidder_name").notNull(),
-  bidderType: (0, import_sqlite_core.text)("bidder_type", { enum: ["USER", "BOT"] }).notNull().default("USER"),
-  amount: (0, import_sqlite_core.integer)("amount").notNull(),
-  previousAmount: (0, import_sqlite_core.integer)("previous_amount").notNull().default(0),
-  status: (0, import_sqlite_core.text)("status", { enum: ["WINNING", "OUTBID", "WON"] }).notNull().default("WINNING"),
-  createdAt: (0, import_sqlite_core.integer)("created_at").notNull()
+var bids = (0, import_pg_core.pgTable)("bids", {
+  id: (0, import_pg_core.text)("id").primaryKey(),
+  roomId: (0, import_pg_core.text)("room_id").notNull().references(() => auctionRooms.id, { onDelete: "cascade" }),
+  bidderName: (0, import_pg_core.text)("bidder_name").notNull(),
+  bidderType: (0, import_pg_core.text)("bidder_type", { enum: ["USER", "BOT"] }).notNull().default("USER"),
+  amount: (0, import_pg_core.bigint)("amount", { mode: "number" }).notNull(),
+  previousAmount: (0, import_pg_core.bigint)("previous_amount", { mode: "number" }).notNull().default(0),
+  status: (0, import_pg_core.text)("status", { enum: ["WINNING", "OUTBID", "WON"] }).notNull().default("WINNING"),
+  createdAt: (0, import_pg_core.bigint)("created_at", { mode: "number" }).notNull()
 });
-var simulationConfigs = (0, import_sqlite_core.sqliteTable)("simulation_configs", {
-  roomId: (0, import_sqlite_core.text)("room_id").primaryKey().references(() => auctionRooms.id, { onDelete: "cascade" }),
-  botEnabled: (0, import_sqlite_core.integer)("bot_enabled").notNull().default(1),
-  botCount: (0, import_sqlite_core.integer)("bot_count").notNull().default(4),
-  botAggressiveness: (0, import_sqlite_core.text)("bot_aggressiveness", { enum: ["LOW", "MEDIUM", "HIGH", "CHAOS"] }).notNull().default("MEDIUM"),
-  botMinDelayMs: (0, import_sqlite_core.integer)("bot_min_delay_ms").notNull().default(1500),
-  botMaxDelayMs: (0, import_sqlite_core.integer)("bot_max_delay_ms").notNull().default(4500),
-  antiSnipingEnabled: (0, import_sqlite_core.integer)("anti_sniping_enabled").notNull().default(1)
+var simulationConfigs = (0, import_pg_core.pgTable)("simulation_configs", {
+  roomId: (0, import_pg_core.text)("room_id").primaryKey().references(() => auctionRooms.id, { onDelete: "cascade" }),
+  botEnabled: (0, import_pg_core.integer)("bot_enabled").notNull().default(1),
+  botCount: (0, import_pg_core.integer)("bot_count").notNull().default(4),
+  botAggressiveness: (0, import_pg_core.text)("bot_aggressiveness", { enum: ["LOW", "MEDIUM", "HIGH", "CHAOS"] }).notNull().default("MEDIUM"),
+  botMinDelayMs: (0, import_pg_core.integer)("bot_min_delay_ms").notNull().default(1500),
+  botMaxDelayMs: (0, import_pg_core.integer)("bot_max_delay_ms").notNull().default(4500),
+  antiSnipingEnabled: (0, import_pg_core.integer)("anti_sniping_enabled").notNull().default(1)
 });
-var users = (0, import_sqlite_core.sqliteTable)("users", {
-  id: (0, import_sqlite_core.text)("id").primaryKey(),
-  name: (0, import_sqlite_core.text)("name").notNull(),
-  phone: (0, import_sqlite_core.text)("phone").notNull().unique(),
-  email: (0, import_sqlite_core.text)("email"),
-  city: (0, import_sqlite_core.text)("city").default("Jakarta"),
-  createdAt: (0, import_sqlite_core.integer)("created_at").notNull(),
-  updatedAt: (0, import_sqlite_core.integer)("updated_at").notNull()
+var users = (0, import_pg_core.pgTable)("users", {
+  id: (0, import_pg_core.text)("id").primaryKey(),
+  name: (0, import_pg_core.text)("name").notNull(),
+  phone: (0, import_pg_core.text)("phone").notNull().unique(),
+  email: (0, import_pg_core.text)("email"),
+  city: (0, import_pg_core.text)("city").default("Jakarta"),
+  createdAt: (0, import_pg_core.bigint)("created_at", { mode: "number" }).notNull(),
+  updatedAt: (0, import_pg_core.bigint)("updated_at", { mode: "number" }).notNull()
 });
-var appSettings = (0, import_sqlite_core.sqliteTable)("app_settings", {
-  key: (0, import_sqlite_core.text)("key").primaryKey(),
-  value: (0, import_sqlite_core.text)("value").notNull(),
-  updatedAt: (0, import_sqlite_core.integer)("updated_at").notNull()
+var appSettings = (0, import_pg_core.pgTable)("app_settings", {
+  key: (0, import_pg_core.text)("key").primaryKey(),
+  value: (0, import_pg_core.text)("value").notNull(),
+  updatedAt: (0, import_pg_core.bigint)("updated_at", { mode: "number" }).notNull()
 });
-var botProfiles = (0, import_sqlite_core.sqliteTable)("bot_profiles", {
-  id: (0, import_sqlite_core.text)("id").primaryKey(),
-  name: (0, import_sqlite_core.text)("name").notNull(),
-  personality: (0, import_sqlite_core.text)("personality", {
+var botProfiles = (0, import_pg_core.pgTable)("bot_profiles", {
+  id: (0, import_pg_core.text)("id").primaryKey(),
+  name: (0, import_pg_core.text)("name").notNull(),
+  personality: (0, import_pg_core.text)("personality", {
     enum: ["AGGRESSIVE", "SNIPER", "CASUAL", "CONSERVATIVE", "ERRATIC"]
   }).notNull().default("CASUAL"),
-  avatarUrl: (0, import_sqlite_core.text)("avatar_url"),
-  minDelaySec: (0, import_sqlite_core.integer)("min_delay_sec").notNull().default(2),
-  maxDelaySec: (0, import_sqlite_core.integer)("max_delay_sec").notNull().default(5),
-  maxBudget: (0, import_sqlite_core.integer)("max_budget").notNull().default(0),
+  avatarUrl: (0, import_pg_core.text)("avatar_url"),
+  minDelaySec: (0, import_pg_core.integer)("min_delay_sec").notNull().default(2),
+  maxDelaySec: (0, import_pg_core.integer)("max_delay_sec").notNull().default(5),
+  maxBudget: (0, import_pg_core.bigint)("max_budget", { mode: "number" }).notNull().default(0),
   // 0 = unlimited
-  isActive: (0, import_sqlite_core.integer)("is_active").notNull().default(1),
+  isActive: (0, import_pg_core.integer)("is_active").notNull().default(1),
   // 1 = active, 0 = disabled
-  createdAt: (0, import_sqlite_core.integer)("created_at").notNull(),
-  updatedAt: (0, import_sqlite_core.integer)("updated_at").notNull()
+  createdAt: (0, import_pg_core.bigint)("created_at", { mode: "number" }).notNull(),
+  updatedAt: (0, import_pg_core.bigint)("updated_at", { mode: "number" }).notNull()
 });
 
 // src/db/index.ts
-var import_node_fs = __toESM(require("node:fs"));
-var import_node_path = __toESM(require("node:path"));
-var dbDir = import_node_path.default.resolve(process.cwd(), "data");
-if (!import_node_fs.default.existsSync(dbDir)) {
-  import_node_fs.default.mkdirSync(dbDir, { recursive: true });
+if (typeof process.loadEnvFile === "function") {
+  try {
+    process.loadEnvFile();
+  } catch {
+  }
 }
-var dbPath = import_node_path.default.resolve(dbDir, "simulator.db");
-var client = (0, import_client.createClient)({
-  url: `file:${dbPath}`
+var connectionString = process.env.DATABASE_URL || "postgres://bid_user:bid_secure_pass123@localhost:5432/bid_simulator";
+var client = (0, import_postgres.default)(connectionString, {
+  max: parseInt(process.env.DB_MAX_CONNECTIONS || "20", 10),
+  idle_timeout: 30,
+  connect_timeout: 10,
+  onnotice: () => {
+  }
+  // Suppress notice spam
 });
-var db = (0, import_libsql.drizzle)(client, { schema: schema_exports });
+var db = (0, import_postgres_js.drizzle)(client, { schema: schema_exports });
 var initDatabasePromise = (async () => {
   if (process.env.NEXT_PHASE === "phase-production-build") return;
   try {
-    await client.execute("PRAGMA journal_mode = WAL;");
-    await client.execute("PRAGMA busy_timeout = 5000;");
-    await client.execute(`
+    await client`
       CREATE TABLE IF NOT EXISTS auction_rooms (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
@@ -151,10 +154,10 @@ var initDatabasePromise = (async () => {
         description TEXT NOT NULL,
         category TEXT NOT NULL DEFAULT 'Handphone',
         image_url TEXT NOT NULL,
-        starting_price INTEGER NOT NULL,
-        current_price INTEGER NOT NULL,
+        starting_price BIGINT NOT NULL,
+        current_price BIGINT NOT NULL,
         bid_increment INTEGER NOT NULL DEFAULT 50000,
-        reserve_price INTEGER NOT NULL DEFAULT 0,
+        reserve_price BIGINT NOT NULL DEFAULT 0,
         status TEXT NOT NULL DEFAULT 'ACTIVE',
         total_duration_seconds INTEGER NOT NULL DEFAULT 45240,
         time_remaining INTEGER NOT NULL DEFAULT 45240,
@@ -162,101 +165,87 @@ var initDatabasePromise = (async () => {
         highest_bidder_name TEXT,
         highest_bidder_type TEXT,
         total_bids INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT NOT NULL
       );
-    `);
-    await client.execute(`
+    `;
+    await client`
       CREATE TABLE IF NOT EXISTS bids (
         id TEXT PRIMARY KEY,
-        room_id TEXT NOT NULL,
+        room_id TEXT NOT NULL REFERENCES auction_rooms(id) ON DELETE CASCADE,
         bidder_name TEXT NOT NULL,
         bidder_type TEXT NOT NULL DEFAULT 'USER',
-        amount INTEGER NOT NULL,
-        previous_amount INTEGER NOT NULL DEFAULT 0,
+        amount BIGINT NOT NULL,
+        previous_amount BIGINT NOT NULL DEFAULT 0,
         status TEXT NOT NULL DEFAULT 'WINNING',
-        created_at INTEGER NOT NULL,
-        FOREIGN KEY (room_id) REFERENCES auction_rooms(id) ON DELETE CASCADE
+        created_at BIGINT NOT NULL
       );
-    `);
-    await client.execute(`
+    `;
+    await client`
       CREATE TABLE IF NOT EXISTS simulation_configs (
-        room_id TEXT PRIMARY KEY,
+        room_id TEXT PRIMARY KEY REFERENCES auction_rooms(id) ON DELETE CASCADE,
         bot_enabled INTEGER NOT NULL DEFAULT 1,
         bot_count INTEGER NOT NULL DEFAULT 4,
         bot_aggressiveness TEXT NOT NULL DEFAULT 'MEDIUM',
         bot_min_delay_ms INTEGER NOT NULL DEFAULT 2000,
         bot_max_delay_ms INTEGER NOT NULL DEFAULT 5000,
-        anti_sniping_enabled INTEGER NOT NULL DEFAULT 1,
-        FOREIGN KEY (room_id) REFERENCES auction_rooms(id) ON DELETE CASCADE
+        anti_sniping_enabled INTEGER NOT NULL DEFAULT 1
       );
-    `);
-    await client.execute(`
+    `;
+    await client`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         phone TEXT NOT NULL UNIQUE,
         email TEXT,
         city TEXT DEFAULT 'Jakarta',
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT NOT NULL
       );
-    `);
-    const res = await client.execute({
-      sql: "SELECT id FROM users WHERE phone = ? LIMIT 1",
-      args: ["81373827173"]
-    });
-    if (res.rows.length === 0) {
-      const now = Date.now();
-      await client.execute({
-        sql: `INSERT INTO users (id, name, phone, email, city, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        args: [
-          "usr-demo-1",
-          "Menik Sri Rejeki",
-          "81373827173",
-          "menikbda@gmail.com",
-          "Jakarta",
-          now,
-          now
-        ]
-      });
+    `;
+    const usersRes = await client`
+      SELECT id FROM users WHERE phone = '81373827173' LIMIT 1
+    `;
+    const now = Date.now();
+    if (usersRes.length === 0) {
+      await client`
+        INSERT INTO users (id, name, phone, email, city, created_at, updated_at)
+        VALUES ('usr-demo-1', 'Menik Sri Rejeki', '81373827173', 'menikbda@gmail.com', 'Jakarta', ${now}, ${now})
+        ON CONFLICT (phone) DO UPDATE
+        SET name = EXCLUDED.name, email = EXCLUDED.email;
+      `;
     } else {
-      await client.execute({
-        sql: "UPDATE users SET name = ?, email = ? WHERE phone = ?",
-        args: ["Menik Sri Rejeki", "menikbda@gmail.com", "81373827173"]
-      });
+      await client`
+        UPDATE users SET name = 'Menik Sri Rejeki', email = 'menikbda@gmail.com' WHERE phone = '81373827173';
+      `;
     }
-    await client.execute(`
+    await client`
       CREATE TABLE IF NOT EXISTS app_settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
-        updated_at INTEGER NOT NULL
+        updated_at BIGINT NOT NULL
       );
-    `);
-    const scheduleRes = await client.execute({
-      sql: "SELECT key FROM app_settings WHERE key = 'session_start_time' LIMIT 1"
-    });
-    if (scheduleRes.rows.length === 0) {
-      const now = Date.now();
-      await client.execute({
-        sql: `INSERT OR IGNORE INTO app_settings (key, value, updated_at) VALUES
-              ('session_start_time', '00:00:00', ?),
-              ('session_end_time', '23:59:59', ?),
-              ('session_auto_sync', '1', ?)`,
-        args: [now, now, now]
-      });
+    `;
+    const scheduleRes = await client`
+      SELECT key FROM app_settings WHERE key = 'session_start_time' LIMIT 1
+    `;
+    if (scheduleRes.length === 0) {
+      await client`
+        INSERT INTO app_settings (key, value, updated_at) VALUES
+          ('session_start_time', '00:00:00', ${now}),
+          ('session_end_time', '23:59:59', ${now}),
+          ('session_auto_sync', '1', ${now})
+        ON CONFLICT (key) DO NOTHING;
+      `;
     }
-    await client.execute({
-      sql: `UPDATE app_settings SET value = '00:00:00' WHERE key = 'session_start_time'`
-    });
-    await client.execute({
-      sql: `UPDATE app_settings SET value = '23:59:59' WHERE key = 'session_end_time'`
-    });
-    await client.execute({
-      sql: `UPDATE auction_rooms SET status = 'ACTIVE', time_remaining = 36000, total_duration_seconds = 36000 WHERE status = 'UPCOMING' OR time_remaining <= 0`
-    });
-    await client.execute(`
+    await client`UPDATE app_settings SET value = '00:00:00' WHERE key = 'session_start_time'`;
+    await client`UPDATE app_settings SET value = '23:59:59' WHERE key = 'session_end_time'`;
+    await client`
+      UPDATE auction_rooms
+      SET status = 'ACTIVE', time_remaining = 36000, total_duration_seconds = 36000
+      WHERE status = 'UPCOMING' OR time_remaining <= 0
+    `;
+    await client`
       CREATE TABLE IF NOT EXISTS bot_profiles (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -264,16 +253,15 @@ var initDatabasePromise = (async () => {
         avatar_url TEXT,
         min_delay_sec INTEGER NOT NULL DEFAULT 2,
         max_delay_sec INTEGER NOT NULL DEFAULT 5,
-        max_budget INTEGER NOT NULL DEFAULT 0,
+        max_budget BIGINT NOT NULL DEFAULT 0,
         is_active INTEGER NOT NULL DEFAULT 1,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
+        created_at BIGINT NOT NULL,
+        updated_at BIGINT NOT NULL
       );
-    `);
-    const botsCount = await client.execute("SELECT count(*) as count FROM bot_profiles");
-    const count = Number(botsCount.rows[0]?.count || 0);
+    `;
+    const botsCount = await client`SELECT count(*) as count FROM bot_profiles`;
+    const count = Number(botsCount[0]?.count || 0);
     if (count === 0) {
-      const now = Date.now();
       const defaultBots = [
         { id: "bot-1", name: "+62858...", personality: "AGGRESSIVE", minDelaySec: 1, maxDelaySec: 3, maxBudget: 0, isActive: 1 },
         { id: "bot-2", name: "+62821...", personality: "SNIPER", minDelaySec: 1, maxDelaySec: 3, maxBudget: 0, isActive: 1 },
@@ -284,15 +272,15 @@ var initDatabasePromise = (async () => {
         { id: "bot-7", name: "+62852...", personality: "SNIPER", minDelaySec: 1, maxDelaySec: 2, maxBudget: 0, isActive: 1 }
       ];
       for (const b of defaultBots) {
-        await client.execute({
-          sql: `INSERT OR IGNORE INTO bot_profiles (id, name, personality, min_delay_sec, max_delay_sec, max_budget, is_active, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [b.id, b.name, b.personality, b.minDelaySec, b.maxDelaySec, b.maxBudget, b.isActive, now, now]
-        });
+        await client`
+          INSERT INTO bot_profiles (id, name, personality, min_delay_sec, max_delay_sec, max_budget, is_active, created_at, updated_at)
+          VALUES (${b.id}, ${b.name}, ${b.personality}, ${b.minDelaySec}, ${b.maxDelaySec}, ${b.maxBudget}, ${b.isActive}, ${now}, ${now})
+          ON CONFLICT (id) DO NOTHING;
+        `;
       }
     }
   } catch (err) {
-    console.error("Failed to initialize database tables:", err);
+    console.warn("Database initialization warning (will retry on query if starting up):", err);
   }
 })();
 
@@ -1204,16 +1192,22 @@ function initSocketServer(io, engine) {
 }
 
 // server.ts
+if (typeof process.loadEnvFile === "function") {
+  try {
+    process.loadEnvFile();
+  } catch {
+  }
+}
 var dev = process.env.NODE_ENV === "development";
 var hostname = "0.0.0.0";
 var port = parseInt(process.env.PORT || "3030", 10);
 async function main() {
   await simulationEngine.init();
-  const path2 = require("node:path");
-  const fs2 = require("node:fs");
+  const path = require("node:path");
+  const fs = require("node:fs");
   let projectDir = process.cwd();
-  if (!fs2.existsSync(path2.join(projectDir, ".next/required-server-files.json"))) {
-    projectDir = path2.resolve(__dirname, "..");
+  if (!fs.existsSync(path.join(projectDir, ".next/required-server-files.json"))) {
+    projectDir = path.resolve(__dirname, "..");
   }
   let handle;
   if (dev) {
@@ -1228,7 +1222,7 @@ async function main() {
   } else {
     const NextNodeServer = require("next/dist/server/next-server").default;
     console.log(`\u{1F4C2} Using project directory: ${projectDir}`);
-    const serverFiles = require(path2.join(projectDir, ".next/required-server-files.json"));
+    const serverFiles = require(path.join(projectDir, ".next/required-server-files.json"));
     const conf = serverFiles.config;
     const nextServer = new NextNodeServer({
       dir: projectDir,
@@ -1300,12 +1294,24 @@ async function main() {
     },
     path: "/api/socketio"
   });
+  if (process.env.REDIS_URL) {
+    try {
+      const { createAdapter } = require("@socket.io/redis-adapter");
+      const Redis = require("ioredis");
+      const pubClient = new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: null });
+      const subClient = pubClient.duplicate();
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log("\u26A1 Socket.IO initialized with Redis Pub/Sub adapter for high-concurrency clustering.");
+    } catch (redisErr) {
+      console.warn("\u26A0\uFE0F Failed to initialize Redis Adapter for Socket.IO (falling back to memory):", redisErr);
+    }
+  }
   initSocketServer(io, simulationEngine);
   httpServer.listen(port, hostname, () => {
     console.log(`
 ======================================================`);
     console.log(`\u26A1 BID SIMULATOR & CMS CONTROLLER READY`);
-    console.log(`\u{1F4F1} Mobile Simulator : http://localhost:${port}/simulator`);
+    console.log(`\u{1F310} Tampilan Publik  : http://localhost:${port}/`);
     console.log(`\u{1F5A5}\uFE0F CMS Controller   : http://localhost:${port}/admin`);
     console.log(`======================================================
 `);

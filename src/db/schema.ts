@@ -1,6 +1,6 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, bigint } from "drizzle-orm/pg-core";
 
-export const auctionRooms = sqliteTable("auction_rooms", {
+export const auctionRooms = pgTable("auction_rooms", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description").notNull(),
@@ -11,10 +11,10 @@ export const auctionRooms = sqliteTable("auction_rooms", {
   stock: integer("stock").notNull().default(1),
   specs: text("specs").notNull().default(""),
   imageUrl: text("image_url").notNull(),
-  startingPrice: integer("starting_price").notNull(),
-  currentPrice: integer("current_price").notNull(),
+  startingPrice: bigint("starting_price", { mode: "number" }).notNull(),
+  currentPrice: bigint("current_price", { mode: "number" }).notNull(),
   bidIncrement: integer("bid_increment").notNull().default(20000),
-  reservePrice: integer("reserve_price").notNull().default(0),
+  reservePrice: bigint("reserve_price", { mode: "number" }).notNull().default(0),
   status: text("status", { enum: ["DRAFT", "UPCOMING", "ACTIVE", "PAUSED", "ENDED"] })
     .notNull()
     .default("ACTIVE"),
@@ -24,26 +24,26 @@ export const auctionRooms = sqliteTable("auction_rooms", {
   highestBidderName: text("highest_bidder_name"),
   highestBidderType: text("highest_bidder_type", { enum: ["USER", "BOT"] }),
   totalBids: integer("total_bids").notNull().default(0),
-  createdAt: integer("created_at").notNull(),
-  updatedAt: integer("updated_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
 });
 
-export const bids = sqliteTable("bids", {
+export const bids = pgTable("bids", {
   id: text("id").primaryKey(),
   roomId: text("room_id")
     .notNull()
     .references(() => auctionRooms.id, { onDelete: "cascade" }),
   bidderName: text("bidder_name").notNull(),
   bidderType: text("bidder_type", { enum: ["USER", "BOT"] }).notNull().default("USER"),
-  amount: integer("amount").notNull(),
-  previousAmount: integer("previous_amount").notNull().default(0),
+  amount: bigint("amount", { mode: "number" }).notNull(),
+  previousAmount: bigint("previous_amount", { mode: "number" }).notNull().default(0),
   status: text("status", { enum: ["WINNING", "OUTBID", "WON"] })
     .notNull()
     .default("WINNING"),
-  createdAt: integer("created_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
 });
 
-export const simulationConfigs = sqliteTable("simulation_configs", {
+export const simulationConfigs = pgTable("simulation_configs", {
   roomId: text("room_id")
     .primaryKey()
     .references(() => auctionRooms.id, { onDelete: "cascade" }),
@@ -57,23 +57,23 @@ export const simulationConfigs = sqliteTable("simulation_configs", {
   antiSnipingEnabled: integer("anti_sniping_enabled").notNull().default(1),
 });
 
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   phone: text("phone").notNull().unique(),
   email: text("email"),
   city: text("city").default("Jakarta"),
-  createdAt: integer("created_at").notNull(),
-  updatedAt: integer("updated_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
 });
 
-export const appSettings = sqliteTable("app_settings", {
+export const appSettings = pgTable("app_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
-  updatedAt: integer("updated_at").notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
 });
 
-export const botProfiles = sqliteTable("bot_profiles", {
+export const botProfiles = pgTable("bot_profiles", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   personality: text("personality", {
@@ -84,10 +84,10 @@ export const botProfiles = sqliteTable("bot_profiles", {
   avatarUrl: text("avatar_url"),
   minDelaySec: integer("min_delay_sec").notNull().default(2),
   maxDelaySec: integer("max_delay_sec").notNull().default(5),
-  maxBudget: integer("max_budget").notNull().default(0), // 0 = unlimited
+  maxBudget: bigint("max_budget", { mode: "number" }).notNull().default(0), // 0 = unlimited
   isActive: integer("is_active").notNull().default(1), // 1 = active, 0 = disabled
-  createdAt: integer("created_at").notNull(),
-  updatedAt: integer("updated_at").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
 });
 
 export type AuctionRoom = typeof auctionRooms.$inferSelect;
@@ -101,4 +101,3 @@ export type AppSetting = typeof appSettings.$inferSelect;
 export type NewAppSetting = typeof appSettings.$inferInsert;
 export type BotProfile = typeof botProfiles.$inferSelect;
 export type NewBotProfile = typeof botProfiles.$inferInsert;
-

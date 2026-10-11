@@ -17,9 +17,11 @@ Dokumen ini berisi panduan lengkap untuk setup awal, konfigurasi reverse proxy, 
 
 Aplikasi dibangun dengan arsitektur modern berkinerja tinggi:
 * **Frontend**: Next.js App Router (React 19) dengan desain mobile-first Bidding Plus.
-* **Backend Server**: Single-Process Node.js native (`dist/server.cjs`) dengan Socket.IO WebSocket server.
-* **Database**: SQLite lokal berkecepatan mikrodetik (`data/simulator.db`) dengan 336 ruangan lelang, 1.027 riwayat penawaran, 7 profil bot kustom, dan jadwal otomatis.
-* **Reverse Proxy**: Nginx (dikelola oleh FASTPANEL) dengan terminasi SSL HTTPS (Let's Encrypt) dan penerusan WebSocket (`Upgrade: websocket`).
+* **Backend Server**: Node.js (`dist/server.cjs` atau container) dengan Socket.IO WebSocket server yang didukung Redis Pub/Sub Adapter.
+* **Database & Cache**: 
+  - **PostgreSQL 16**: Relational storage dengan *row-level locking* penuh (menggantikan SQLite, mengeliminasi error `SQLITE_BUSY: database is locked` secara permanen).
+  - **Redis 7**: *In-memory cache* untuk state countdown timer lelang, atomic bid locking, dan sinkronisasi Socket.IO cluster.
+* **Reverse Proxy**: Nginx (dikelola oleh FASTPANEL / native) dengan terminasi SSL HTTPS (Let's Encrypt) dan penerusan WebSocket (`Upgrade: websocket`).
 * **Proteksi Anti-SEO**: Header HTTP `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet` aktif di seluruh respons server.
 
 ---
@@ -130,36 +132,48 @@ Script `deploy.sh` akan secara otomatis:
 
 ---
 
-## 5. Manajemen Database SQLite & Cadangan Data (*Backup*)
+## 5. Deployment Menggunakan Docker & Docker Compose (Sangat Direkomendasikan)
 
-Database SQLite tersimpan di:
-`/var/www/fastuser/data/www/bidsim.labtry.my.id/data/simulator.db`
+Jika VPS Anda mengaktifkan Docker, Anda dapat menjalankan seluruh ekosistem (PostgreSQL 16 + Redis 7 + Bid Simulator) dalam 1 perintah:
 
-* Database **tidak akan hilang atau ter-reset** saat menjalankan `deploy.sh`.
-* Untuk membuat cadangan data lelang secara berkala:
-  ```bash
-  cd /var/www/fastuser/data/www/bidsim.labtry.my.id
-  cp data/simulator.db data/simulator_backup_$(date +%Y%m%d_%H%M%S).db
-  ```
+### A. Konfigurasi Environment File
+Salin contoh environment dan sesuaikan kata sandi jika diperlukan:
+```bash
+cp .env.example .env
+```
+
+### B. Menjalankan Container Stack
+```bash
+# Build dan jalankan seluruh container (postgres, redis, app) di background
+docker compose up -d --build
+```
+* Port internal 3030 otomatis diarahkan ke container aplikasi (port 3000) sehingga langsung terhubung dengan konfigurasi reverse proxy Nginx (`http://127.0.0.1:3030`).
+* Database PostgreSQL dan Redis terisolasi di dalam network internal Docker (`bid-network`) dengan persistent volume (`postgres_data` dan `redis_data`).
+
+### C. Inisialisasi Seed Data Lelang ke PostgreSQL (Opsional)
+```bash
+# Menjalankan seeding awal iPhone lot lelang ke container Postgres
+docker compose exec bid-simulator pnpm seed
+```
 
 ---
 
 ## 6. Tabel Perintah Cepat (*Cheat Sheet*)
 
-| Kebutuhan | Perintah di Terminal VPS |
-| :--- | :--- |
-| **Cek Status Server** | `./status.sh` atau `curl -I http://127.0.0.1:3030/admin` |
-| **Lihat Log Server** | `cat logs/out.log \| tail -n 20` |
-| **Lihat Log Error** | `cat logs/err.log \| tail -n 20` |
-| **Restart Server** | `./start.sh` atau `pm2 restart bid-simulator` |
-| **Hentikan Server** | `./stop.sh` atau `pm2 stop bid-simulator` |
-| **Update Aplikasi** | `./deploy.sh` |
+| Kebutuhan | Perintah Docker di VPS | Perintah Non-Docker (Host Native) |
+| :--- | :--- | :--- |
+| **Cek Status Server** | `docker compose ps` | `./status.sh` atau `curl -I http://127.0.0.1:3030/admin` |
+| **Lihat Log Server** | `docker compose logs -f bid-simulator` | `cat logs/out.log \| tail -n 20` |
+| **Lihat Log Database** | `docker compose logs -f postgres` | - |
+| **Restart Server** | `docker compose restart bid-simulator` | `./start.sh` atau `pm2 restart bid-simulator` |
+| **Hentikan Seluruh Stack** | `docker compose down` | `./stop.sh` |
+| **Update Aplikasi** | `git pull && docker compose up -d --build` | `./deploy.sh` |
 
 ---
 
 ## 7. URL Akses Aplikasi
 
-* **Mobile Live Auction Simulator**: [https://bidsim.labtry.my.id/simulator](https://bidsim.labtry.my.id/simulator)
+* **Halaman Publik Lelang (Peserta)**: [https://bidsim.labtry.my.id/](https://bidsim.labtry.my.id/)
 * **CMS Master Controller (Admin)**: [https://bidsim.labtry.my.id/admin](https://bidsim.labtry.my.id/admin)
 
-*Dokumen panduan resmi diperbarui untuk lingkungan Hostinger VPS KVM 1.*
+*Dokumen panduan resmi diperbarui untuk arsitektur PostgreSQL 16 + Redis 7 di Hostinger VPS KVM 1.*
