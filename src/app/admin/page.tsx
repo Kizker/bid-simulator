@@ -1695,6 +1695,26 @@ export default function AdminPage() {
                           </span>
                         </div>
                       </div>
+
+                      {/* Kartu Tombol Reset Tawaran Semua Unit */}
+                      <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/90 space-y-1.5 min-w-[190px]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-extrabold uppercase text-amber-800 tracking-wider">
+                            Reset Penawaran
+                          </span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-200/80 text-amber-900">
+                            {rooms.length} Unit
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setIsResetModalOpen(true)}
+                          disabled={isResettingUnits}
+                          className="w-full py-1.5 px-2.5 rounded-lg text-xs font-bold bg-[#0066D6] hover:bg-[#0055B8] active:scale-95 text-white transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+                        >
+                          <RotateCcw className={`w-3.5 h-3.5 ${isResettingUnits ? "animate-spin" : ""}`} />
+                          <span>Reset ke Open Bid</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
